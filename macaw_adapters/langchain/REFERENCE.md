@@ -85,7 +85,7 @@ cleanup()
 
 ## Security Policy Format (Simple)
 
-The adapter accepts a simplified policy format and converts it to SOSP:
+The adapter accepts a simplified policy format and converts it to MAPL:
 
 ```python
 security_policy = {
@@ -105,9 +105,9 @@ security_policy = {
 
 ### Policy Conversion
 
-The simple format is automatically converted to SOSP:
+The simple format is automatically converted to MAPL:
 
-| Simple Format | SOSP Format |
+| Simple Format | MAPL Format |
 |---------------|-------------|
 | `allowed_tools: ["calc"]` | `resources: ["tool:calc"]` |
 | `blocked_tools: ["admin"]` | `denied_resources: ["tool:admin"]` |

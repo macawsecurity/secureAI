@@ -1,0 +1,6 @@
+# MACAW Adapters (includes macaw_client)
+macaw-adapters[openai]>=0.5.22
+
+# Or install individually:
+# macaw-client>=0.5.22
+# openai>=1.0.0

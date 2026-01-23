@@ -1,0 +1,34 @@
+{
+  "constraints": {
+    "parameters": {
+      "tool:*/generate": {
+        "max_tokens": {
+          "max": 4000
+        },
+        "model": [
+          "gpt-3.5-turbo",
+          "gpt-4"
+        ],
+        "temperature": {
+          "max": 1.0
+        }
+      }
+    },
+    "rate_limit": 100
+  },
+  "denied_resources": [
+    "*.secret",
+    "*.password",
+    "*.key",
+    "*.pem"
+  ],
+  "description": "Maximum access for system administrator",
+  "extends": "company:FinTech Corp",
+  "policy_id": "user:carol",
+  "resources": [
+    "tool:*/generate",
+    "tool:financial_analysis"
+  ],
+  "scope": "global",
+  "version": "1.0"
+}

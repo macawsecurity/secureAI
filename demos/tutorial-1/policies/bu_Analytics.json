@@ -1,0 +1,8 @@
+{
+  "description": "Policy for Analytics BU",
+  "extends": "company:FinTech Corp",
+  "policy_id": "bu:Analytics",
+  "resources": [],
+  "scope": "global",
+  "version": "1.0"
+}

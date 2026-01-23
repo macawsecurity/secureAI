@@ -80,12 +80,12 @@ def _setup_security(
 
     Args:
         tools: List of LangChain tools
-        security_policy: SOSP format policy dict with resources, denied_resources, constraints
+        security_policy: MAPL format policy dict with resources, denied_resources, constraints
 
     Returns:
         (processed_tools, macaw_client) - wrapped tools and client, or originals if no policy
 
-    Example policy (SOSP format):
+    Example policy (MAPL format):
         {
             "resources": ["tool:calculator", "tool:weather"],
             "denied_resources": ["tool:admin"],
@@ -153,7 +153,7 @@ def _setup_security(
     client = MACAWClient(
         app_name="secure-langchain-agent",
         app_version="1.0.0",
-        intent_policy=security_policy,  # SOSP format policy passed directly
+        intent_policy=security_policy,  # MAPL format policy passed directly
         tool_handlers=tool_handlers,
         tools=tools_config  # Pass tools with prompts declaration
     )

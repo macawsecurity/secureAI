@@ -112,7 +112,7 @@ def main():
     print("Policy: Allow calculator & weather, block admin")
     print("        Block queries with '*password*'")
 
-    # SOSP format policy - direct, no conversion layer
+    # MAPL format policy - direct, no conversion layer
     policy = {
         "resources": ["tool:calculator", "tool:weather"],  # Allowed tools
         "denied_resources": ["tool:admin"],                 # Blocked tools

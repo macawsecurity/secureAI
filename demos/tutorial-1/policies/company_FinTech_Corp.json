@@ -1,0 +1,70 @@
+{
+  "constraints": {
+    "parameters": {
+      "tool:*/complete": {
+        "max_tokens": {
+          "max": 4000
+        },
+        "model": [
+          "gpt-3.5-turbo-instruct",
+          "davinci-002",
+          "babbage-002"
+        ],
+        "temperature": {
+          "max": 2,
+          "min": 0
+        }
+      },
+      "tool:*/embed": {
+        "model": [
+          "text-embedding-ada-002",
+          "text-embedding-3-small",
+          "text-embedding-3-large"
+        ]
+      },
+      "tool:*/generate": {
+        "frequency_penalty": {
+          "max": 2,
+          "min": -2
+        },
+        "max_tokens": {
+          "max": 4000
+        },
+        "model": [
+          "gpt-3.5-turbo",
+          "gpt-4",
+          "claude-3-haiku-20240307",
+          "claude-3-sonnet-20240229",
+          "claude-opus-4-5-20251101"
+        ],
+        "presence_penalty": {
+          "max": 2,
+          "min": -2
+        },
+        "temperature": {
+          "max": 1,
+          "min": 0
+        },
+        "top_p": {
+          "max": 1,
+          "min": 0
+        }
+      }
+    },
+    "rate_limit": 100
+  },
+  "denied_resources": [
+    "*.secret",
+    "*.password",
+    "*.key",
+    "*.pem"
+  ],
+  "description": "Company-wide base policy for FinTech Corp",
+  "policy_id": "company:FinTech Corp",
+  "resources": [
+    "tool:*/generate",
+    "tool:financial_analysis"
+  ],
+  "scope": "global",
+  "version": "1.0.3"
+}

@@ -1,0 +1,152 @@
+# MACAW Identity Bridge Configuration
+# Universal translator for JWT tokens from any identity provider
+
+# MACAW Internal Security Context Model (READ-ONLY - DO NOT MODIFY)
+# These attributes are used by PolicyResolver for hierarchical policy lookup
+internal_model:
+  company: "Organization/company for policy hierarchy (maps from organization claim)"
+  business_unit: "Department or business unit"
+  team: "Team or group"
+  user: "User identifier for user-specific policies"
+  roles: "User roles for role-based access control"
+  email: "User email address"
+
+# Identity Provider Configurations
+# Each provider has detection rules, claim mappings, and role processing
+identity_providers:
+  keycloak:
+    name: "Keycloak (Red Hat SSO)"
+    detection:
+      iss_pattern: "*realms/*"
+      required_claims: ["realm_access"]
+    mappings:
+      # Core identity fields
+      subject_path: "sub"
+      email_path: "email"
+      name_path: "preferred_username"
+      # Organizational hierarchy (organization maps to company)
+      organization_path: "organization"
+      business_unit_path: "business_unit"
+      team_path: "team"
+      # Role extraction from Keycloak structure
+      roles_path: "realm_access.roles"
+    role_filter:
+      allowed: ["analyst", "manager", "admin", "viewer"]
+      case_sensitive: false
+
+  azure_ad:
+    name: "Azure Active Directory"
+    detection:
+      iss_pattern: "https://sts.windows.net/*"
+      required_claims: ["oid", "tid"]
+    mappings:
+      # Core identity fields
+      subject_path: "oid"
+      email_path: "upn"
+      name_path: "name"
+      # Organizational hierarchy (tid maps to company)
+      organization_path: "tid"
+      business_unit_path: "department"
+      team_path: "jobTitle"
+      # Role extraction
+      roles_path: "roles"
+    role_filter:
+      allowed: ["analyst", "manager", "admin", "viewer"]
+      case_sensitive: false
+
+  okta:
+    name: "Okta"
+    detection:
+      iss_pattern: "https://*.okta.com"
+      required_claims: ["groups"]
+    mappings:
+      # Core identity fields
+      subject_path: "sub"
+      email_path: "email"
+      name_path: "name"
+      # Organizational hierarchy (org maps to company)
+      organization_path: "org"
+      business_unit_path: "department"
+      team_path: "division"
+      # Role extraction from groups
+      roles_path: "groups"
+    role_filter:
+      allowed: ["analysts", "managers", "admins", "viewers"]  # Okta often uses plurals
+      case_sensitive: false
+      # Map Okta group names to standard MACAW roles
+      role_mapping:
+        analysts: analyst
+        managers: manager
+        admins: admin
+        viewers: viewer
+
+  auth0:
+    name: "Auth0"
+    detection:
+      iss_pattern: "auth0.com"  # Matches any Auth0 issuer (including regional like .us.auth0.com)
+      required_claims: []  # Auth0 access tokens use namespaced custom claims
+    mappings:
+      # Core identity fields (standard OIDC claims)
+      subject_path: "sub"
+      email_path: "email"  # Standard OIDC claim, not namespaced
+      name_path: "https://macaw.local/username"  # Added by our Action
+      # Organizational hierarchy from Auth0 Action custom claims
+      organization_path: "https://macaw.local/organization"
+      business_unit_path: "https://macaw.local/business_unit"
+      team_path: "https://macaw.local/team"
+      # Role extraction from Auth0 Action custom claims
+      roles_path: "https://macaw.local/roles"
+      # Additional MACAW-specific claims for policy enforcement
+      tier_path: "https://macaw.local/tier"
+      max_tokens_path: "https://macaw.local/max_tokens"
+      allowed_models_path: "https://macaw.local/allowed_models"
+    role_filter:
+      allowed: ["analyst", "manager", "admin", "viewer"]
+      case_sensitive: false
+
+  google_workspace:
+    name: "Google Workspace"
+    detection:
+      iss_pattern: "https://accounts.google.com"
+      required_claims: ["hd"]
+    mappings:
+      # Core identity fields
+      subject_path: "sub"
+      email_path: "email"
+      name_path: "name"
+      # Organizational hierarchy (hd = hosted domain maps to company)
+      organization_path: "hd"
+      business_unit_path: "department"
+      team_path: "team"
+      # Role extraction
+      roles_path: "custom_roles"
+    role_filter:
+      allowed: ["analyst", "manager", "admin", "viewer"]
+      case_sensitive: false
+
+# Default fallback for unknown providers
+default:
+  name: "Generic JWT Provider"
+  mappings:
+    subject_path: "sub"
+    email_path: "email"
+    name_path: "name"
+    organization_path: "org"
+    business_unit_path: "department"
+    team_path: "team"
+    roles_path: "roles"
+  role_filter:
+    allowed: ["analyst", "manager", "admin", "viewer"]
+    case_sensitive: false
+
+# Security and validation settings
+security:
+  require_roles: true
+  require_organization: true
+  max_token_age_minutes: 60
+
+# Audit and logging settings
+audit:
+  log_identity_mapping: true
+  log_role_filtering: true
+  log_provider_detection: true

@@ -188,6 +188,45 @@ See the [examples/](examples/) directory for complete working examples:
 - `examples/langchain/` - LangChain integration examples
 - `examples/mcp/` - MCP server and client examples
 
+## Console Dev Hub
+
+Everything in this repository is also available in the MACAW Console's Dev Hub with interactive features:
+
+```
+Console > Dev Hub
+├── Quick Start
+│   └── Download Client SDK (macOS/Linux/Windows, Python 3.9-3.12) and Adapters
+├── Tutorials
+│   └── Role-Based Access Control
+│       ├── Multi-User SaaS Patterns
+│       ├── Agent Orchestration
+│       └── Policy Hierarchies
+├── Examples
+│   ├── OpenAI (drop-in, multi-user, streaming, A2A)
+│   ├── Anthropic (drop-in, multi-user, streaming, A2A)
+│   ├── MCP
+│   │   ├── Simple Invocation
+│   │   ├── Discovery & Resources
+│   │   ├── Logging
+│   │   ├── Progress Tracking
+│   │   ├── Sampling
+│   │   ├── Elicitation
+│   │   └── Roots
+│   └── LangChain
+│       ├── Drop-in Agents
+│       ├── Multi-user Permissions
+│       ├── Agent Orchestration
+│       ├── LLM Wrappers (OpenAI, Anthropic)
+│       └── Memory Integration
+└── Reference
+    ├── MACAW Client SDK
+    ├── Adapter APIs
+    ├── MAPL Policy Language
+    └── Claims Mapping
+```
+
+Access at [console.macawsecurity.ai](https://console.macawsecurity.ai) → Dev Hub tab.
+
 ## Links
 
 - **GitHub**: [github.com/macawsecurity/secureAI](https://github.com/macawsecurity/secureAI)

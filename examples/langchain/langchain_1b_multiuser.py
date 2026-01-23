@@ -67,7 +67,7 @@ ALL_TOOLS = [
 ]
 
 
-# User role configurations with SOSP format policies
+# User role configurations with MAPL format policies
 USER_CONFIGS = {
     "alice": {
         "role": "Financial Analyst",

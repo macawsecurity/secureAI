@@ -1,0 +1,8 @@
+{
+  "description": "Policy for Reporting team under Analytics",
+  "extends": "bu:Analytics",
+  "policy_id": "team:Reporting",
+  "resources": [],
+  "scope": "global",
+  "version": "1.0"
+}

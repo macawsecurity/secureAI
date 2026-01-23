@@ -1,0 +1,28 @@
+{
+  "constraints": {
+    "parameters": {
+      "tool:*/generate": {
+        "max_tokens": {
+          "max": 2000
+        },
+        "model": [
+          "gpt-3.5-turbo",
+          "gpt-4",
+          "claude-3-haiku-20240307",
+          "claude-3-sonnet-20240229",
+          "claude-opus-4-5-20251101"
+        ],
+        "temperature": {
+          "max": 0.8
+        }
+      }
+    },
+    "rate_limit": 30
+  },
+  "description": "Enhanced policy for team manager",
+  "extends": "team:Reporting",
+  "policy_id": "user:bob",
+  "resources": [],
+  "scope": "global",
+  "version": "1.0.3"
+}

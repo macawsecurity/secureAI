@@ -104,7 +104,7 @@ Question: {input}
 Thought:{agent_scratchpad}""")
 
 
-# Specialized agent configurations with SOSP format policies
+# Specialized agent configurations with MAPL format policies
 AGENT_CONFIGS = {
     "research": {
         "description": "Research Agent - web search and public documents",
