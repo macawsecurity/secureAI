@@ -529,50 +529,49 @@ class SecureMCP:
         try:
             from macaw_client import MACAWClient
 
-            # Collect tool metadata
-            tools_metadata = {}
-            tool_handlers = {}
+            # Collect unified tools config (handler + metadata together)
+            tools_config = {}
             tool_names = []
 
             for tool_name, tool_info in self._tools.items():
                 tool_names.append(tool_name)
-                tools_metadata[tool_name] = {
+                # Unified format: handler + metadata together
+                tools_config[tool_name] = {
+                    "handler": self._create_handler(
+                        tool_name,
+                        tool_info["handler"],
+                        tool_info["wants_context"]
+                    ),
                     "description": tool_info["description"],
                     "prompts": tool_info.get("prompts", [])
                 }
-                # Create handler wrapper
-                tool_handlers[tool_name] = self._create_handler(
-                    tool_name,
-                    tool_info["handler"],
-                    tool_info["wants_context"]
-                )
 
             # Register resources as tools with resource: prefix
             for uri_pattern, res_info in self._resources.items():
                 res_tool_name = f"resource:{uri_pattern}"
                 tool_names.append(res_tool_name)
-                tools_metadata[res_tool_name] = {
+                tools_config[res_tool_name] = {
+                    "handler": self._create_handler(
+                        uri_pattern,
+                        res_info["handler"],
+                        True  # Resources always get context
+                    ),
                     "description": res_info["description"],
                     "read_only": True
                 }
-                tool_handlers[res_tool_name] = self._create_handler(
-                    uri_pattern,
-                    res_info["handler"],
-                    True  # Resources always get context
-                )
 
             # Register prompts as tools with prompt: prefix
             for prompt_name, prompt_info in self._prompts.items():
                 prompt_tool_name = f"prompt:{prompt_name}"
                 tool_names.append(prompt_tool_name)
-                tools_metadata[prompt_tool_name] = {
+                tools_config[prompt_tool_name] = {
+                    "handler": self._create_handler(
+                        prompt_name,
+                        prompt_info["handler"],
+                        False
+                    ),
                     "description": prompt_info["description"]
                 }
-                tool_handlers[prompt_tool_name] = self._create_handler(
-                    prompt_name,
-                    prompt_info["handler"],
-                    False
-                )
 
             # Build intent policy
             if self._custom_intent_policy:
@@ -602,14 +601,12 @@ class SecureMCP:
                     ]
                     intent_policy["data_access"] = ["filesystem"]
 
-            # Create MACAWClient
+            # Create MACAWClient with unified tools config
             self._client = MACAWClient(
                 app_name=f"securemcp-{self.name}",
                 app_version=self.version,
                 intent_policy=intent_policy,
-                tools=tools_metadata,
-                tool_handlers=tool_handlers,
-                persistent_connection=True,
+                tools=tools_config,  # Unified: {name: {handler, description, ...}}
                 **self.extra_config
             )
 

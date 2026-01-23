@@ -70,18 +70,13 @@ class Server:
             # Following the agent-per-app model - each service is an autonomous agent
             server_app_name = f"securemcp-{self.name}"
             
-            # Collect tools metadata and handlers first
-            tools_metadata = {}
-            tool_handlers = {}
+            # Collect unified tools config (handler + metadata together)
+            tools_config = {}
             tool_names = []
-            
+
             for tool_name, tool_info in self.tools.items():
                 tool_names.append(tool_name)  # Collect tool names for intent_policy
-                tools_metadata[tool_name] = {
-                    'description': tool_info.get('description', ''),
-                    'metadata': tool_info.get('metadata', {})
-                }
-                
+
                 # Create handler wrapper for this tool
                 func = tool_info['function']
                 def create_handler(tool_func):
@@ -96,8 +91,13 @@ class Server:
                             logger.error(f"Tool execution error in {tool_func.__name__}: {e}")
                             raise
                     return handler
-                
-                tool_handlers[tool_name] = create_handler(func)
+
+                # Unified format: handler + metadata together
+                tools_config[tool_name] = {
+                    'handler': create_handler(func),
+                    'description': tool_info.get('description', ''),
+                    'metadata': tool_info.get('metadata', {})
+                }
             
             # Define the intent policy with the actual tools this server provides
             intent_policy = {
@@ -113,14 +113,12 @@ class Server:
                 "description": f"SecureMCP server: {self.name}"
             }
             
-            # Create MACAWClient with agent-per-app model including tools
+            # Create MACAWClient with unified tools config
             self.macaw_client = MACAWClient(
                 app_name=server_app_name,
                 app_version=self.version,
                 intent_policy=intent_policy,
-                tools=tools_metadata,  # Pass tools during initialization
-                tool_handlers=tool_handlers,  # Pass tool handlers
-                persistent_connection=True,  # Server needs persistent connection for tool execution
+                tools=tools_config,  # Unified: {name: {handler, description, ...}}
                 service_account=self.config.get('service_account')  # Pass service account if provided
             )
             

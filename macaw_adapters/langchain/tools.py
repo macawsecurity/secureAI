@@ -72,16 +72,12 @@ class SecureToolWrapper(BaseTool):
             # Build parameters dict
             parameters = {"input": tool_input}
 
-            # Create authenticated prompts based on tool's prompts declaration
-            # Following the same pattern as SecureOpenAI
-            authenticated_prompts = self._create_authenticated_prompts(parameters)
-
             # Invoke tool through MACAW protocol
+            # Authenticated prompts are auto-created by invoke_tool() based on registry
             result = self.macaw_client.invoke_tool(
                 tool_name=self.name,
                 parameters=parameters,
-                target_agent=self.macaw_client.agent_id,
-                authenticated_prompts=authenticated_prompts  # Pass directly, bypasses registry lookup
+                target_agent=self.macaw_client.agent_id
             )
             return str(result) if result is not None else ""
 
@@ -91,48 +87,6 @@ class SecureToolWrapper(BaseTool):
                 logger.warning(f"MACAW blocked {self.name}: {e}")
                 return f"Access denied by security policy: {self.name}"
             raise
-
-    def _create_authenticated_prompts(self, parameters: dict) -> Optional[dict]:
-        """
-        Create authenticated prompts based on tool's prompts declaration.
-
-        Reads prompts declaration from macaw_client.tools config and creates
-        authenticated prompts for declared parameters.
-
-        Args:
-            parameters: The invocation parameters
-
-        Returns:
-            Dict mapping param names to AuthenticatedPrompt.to_dict(), or None
-        """
-        # Get prompts declaration using public API
-        prompts_decl = self.macaw_client.get_tool_prompts(self.name)
-
-        if not prompts_decl:
-            return {}  # Empty dict signals "no prompts" and skips registry lookup
-
-        authenticated_prompts = {}
-        for param_name in prompts_decl:
-            if param_name not in parameters:
-                continue
-
-            param_value = parameters[param_name]
-            if not param_value:
-                continue
-
-            # Create authenticated prompt using public API
-            auth_prompt = self.macaw_client.create_authenticated_prompt(
-                prompt_text=str(param_value),
-                metadata={"tool": self.name, "param": param_name, "source": "langchain"}
-            )
-
-            if auth_prompt is None:
-                # Prompts disabled, return empty to skip registry lookup
-                return {}
-
-            authenticated_prompts[param_name] = auth_prompt.to_dict()
-
-        return authenticated_prompts if authenticated_prompts else {}
 
     async def _arun(
         self,

@@ -146,16 +146,12 @@ def _setup_security(
                 "prompts": tool_prompts
             }
 
-    # Extract tool_handlers for backward compatibility
-    tool_handlers = {name: config["handler"] for name, config in tools_config.items()}
-
-    # Create MACAW client with tools config (includes prompts declaration)
+    # Create MACAW client with unified tools config
     client = MACAWClient(
         app_name="secure-langchain-agent",
         app_version="1.0.0",
         intent_policy=security_policy,  # MAPL format policy passed directly
-        tool_handlers=tool_handlers,
-        tools=tools_config  # Pass tools with prompts declaration
+        tools=tools_config  # Unified: {name: {handler, prompts, ...}}
     )
 
     if client.register():

@@ -110,22 +110,16 @@ class SecureOpenAI:
                 }
             }
 
-            # Extract handlers for backward compat
-            self.tool_handlers = {k: v["handler"] for k, v in self.tools.items()}
-
-            # Create MACAWClient (same as original - no agent_type override)
+            # Create MACAWClient with unified tools config
             self.macaw_client = MACAWClient(
                 app_name=self.app_name,
                 app_version="1.0.0",
                 intent_policy=self.intent_policy,
-                tool_handlers=self.tool_handlers,
-                tools=self.tools,  # Pass tools with prompts declaration
-                persistent_connection=True  # Required for tool execution
+                tools=self.tools  # Unified: {name: {handler, prompts, ...}}
             )
         else:
             # USER MODE: Create user agent with identity
             self.tools = {}
-            self.tool_handlers = {}
 
             self.macaw_client = MACAWClient(
                 user_name=user_name,
@@ -283,7 +277,6 @@ class SecureOpenAI:
             Self for chaining
         """
         self.user_tools[name] = handler
-        self.tool_handlers[name] = handler
 
         # Register with MACAWClient (public API handles sync)
         self.macaw_client.register_tool(name, handler)
@@ -328,7 +321,6 @@ class SecureOpenAI:
                             logger.info(f"Auto-discovered tool: {func_name}")
                             self._discovered_tools[func_name] = func
                             self.user_tools[func_name] = func
-                            self.tool_handlers[func_name] = func
                     else:
                         logger.warning(f"Tool '{func_name}' not found in caller's scope")
 
@@ -503,51 +495,6 @@ class SecureOpenAI:
             logger.error(f"Error in embed handler: {e}")
             return {'error': str(e)}
 
-    def _create_authenticated_prompts_for_tool(
-        self, tool_name: str, params: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Create authenticated prompts for a tool invocation.
-
-        The adapter knows its own prompts declaration (from self.tools).
-        Uses the public MACAWClient.create_authenticated_prompt() API which
-        auto-handles root vs derived internally and returns None if disabled.
-
-        Args:
-            tool_name: Name of the tool being invoked
-            params: The invocation parameters
-
-        Returns:
-            Dict mapping param names to AuthenticatedPrompt.to_dict(), or None
-        """
-        # Get prompts declaration from our own tools config
-        prompts_decl = self.tools.get(tool_name, {}).get("prompts", [])
-        if not prompts_decl:
-            return None
-
-        authenticated_prompts = {}
-        for param_name in prompts_decl:
-            if param_name not in params:
-                continue
-
-            # Serialize the parameter value
-            param_value = params[param_name]
-            prompt_text = json.dumps(param_value) if isinstance(param_value, (list, dict)) else str(param_value)
-
-            # Public API - returns None if prompts disabled
-            auth_prompt = self.macaw_client.create_authenticated_prompt(
-                prompt_text=prompt_text,
-                metadata={'param': param_name, 'tool': tool_name}
-            )
-
-            if auth_prompt is None:
-                # Prompts disabled, no need to continue
-                return None
-
-            authenticated_prompts[param_name] = auth_prompt.to_dict()
-
-        return authenticated_prompts or None
-
     # Namespace classes to mimic OpenAI API structure
     class _ChatNamespace:
         def __init__(self, parent):
@@ -574,19 +521,13 @@ class SecureOpenAI:
                 tool_name = f"tool:{self.parent.app_name}/generate"
                 is_streaming = kwargs.get('stream', False)
 
-                # Adapter creates authenticated prompts ITSELF
-                # No registry lookup needed - we KNOW our prompts declaration
-                authenticated_prompts = self.parent._create_authenticated_prompts_for_tool(
-                    tool_name, kwargs
-                )
-
                 # Route through MACAW's generate resource
                 # MAPL-compliant: tool:<service>/generate
+                # Authenticated prompts are auto-created by invoke_tool() based on registry
                 result = self.parent.macaw_client.invoke_tool(
                     tool_name=tool_name,
                     parameters=kwargs,
                     target_agent=self.parent.server_id,  # Route to ourselves!
-                    authenticated_prompts=authenticated_prompts,  # Pass authenticated prompts directly
                     stream=is_streaming  # Explicit streaming flag
                 )
 
@@ -627,17 +568,12 @@ class SecureOpenAI:
             """Create text completion - routes through MACAW."""
             tool_name = f"tool:{self.parent.app_name}/complete"
 
-            # Adapter creates authenticated prompts ITSELF
-            authenticated_prompts = self.parent._create_authenticated_prompts_for_tool(
-                tool_name, kwargs
-            )
-
             # MAPL-compliant: tool:<service>/complete
+            # Authenticated prompts are auto-created by invoke_tool() based on registry
             result = self.parent.macaw_client.invoke_tool(
                 tool_name=tool_name,
                 parameters=kwargs,
-                target_agent=self.parent.server_id,  # Route to ourselves!
-                authenticated_prompts=authenticated_prompts
+                target_agent=self.parent.server_id  # Route to ourselves!
             )
 
             # Handle errors
@@ -656,17 +592,12 @@ class SecureOpenAI:
             """Create embeddings - routes through MACAW."""
             tool_name = f"tool:{self.parent.app_name}/embed"
 
-            # Adapter creates authenticated prompts ITSELF
-            authenticated_prompts = self.parent._create_authenticated_prompts_for_tool(
-                tool_name, kwargs
-            )
-
             # MAPL-compliant: tool:<service>/embed
+            # Authenticated prompts are auto-created by invoke_tool() based on registry
             result = self.parent.macaw_client.invoke_tool(
                 tool_name=tool_name,
                 parameters=kwargs,
-                target_agent=self.parent.server_id,  # Route to ourselves!
-                authenticated_prompts=authenticated_prompts
+                target_agent=self.parent.server_id  # Route to ourselves!
             )
 
             # Handle errors

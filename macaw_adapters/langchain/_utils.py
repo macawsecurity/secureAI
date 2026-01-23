@@ -16,7 +16,7 @@ _active_clients: Dict[str, MACAWClient] = {}
 def get_or_create_client(
     client_id: str,
     intent_policy: Optional[Dict[str, Any]] = None,
-    tool_handlers: Optional[Dict[str, Callable]] = None
+    tools: Optional[Dict[str, Any]] = None
 ) -> Optional[MACAWClient]:
     """
     Get existing MACAW client or create a new one.
@@ -24,7 +24,7 @@ def get_or_create_client(
     Args:
         client_id: Unique identifier for the client
         intent_policy: Optional policy for the client
-        tool_handlers: Optional tool handlers
+        tools: Optional unified tools config {name: {handler, prompts, ...}}
 
     Returns:
         MACAWClient instance or None if registration fails
@@ -35,7 +35,7 @@ def get_or_create_client(
             app_version="1.0.0",
             agent_type="agent",
             intent_policy=intent_policy,
-            tool_handlers=tool_handlers
+            tools=tools
         )
         if client.register():
             _active_clients[client_id] = client
