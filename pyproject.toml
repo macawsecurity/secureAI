@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "macaw-adapters"
-version = "0.5.23"
+version = "0.5.24"
 description = "Secure AI Adapters for OpenAI, Claude, LangChain, and MCP"
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -38,14 +38,13 @@ langchain = [
     "langchain-openai>=0.0.5",
     "langchain-anthropic>=0.1.0",
 ]
-mcp = ["mcp>=0.1.0"]
+mcp = []
 all = [
     "openai>=1.0.0",
     "anthropic>=0.18.0",
     "langchain>=0.1.0",
     "langchain-openai>=0.0.5",
     "langchain-anthropic>=0.1.0",
-    "mcp>=0.1.0",
 ]
 dev = [
     "pytest>=7.0.0",
