@@ -153,7 +153,7 @@ class TestHarness:
             print("   From PyPI")
 
         result = subprocess.run(
-            [str(self.pip), "install", install_target],
+            [str(self.pip), "install", "--upgrade", "--no-cache-dir", install_target],
             capture_output=True,
             text=True,
         )
