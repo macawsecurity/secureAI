@@ -94,11 +94,50 @@ class TestHarness:
         with zipfile.ZipFile(self.sdk_zip, 'r') as zf:
             zf.extractall(self.sdk_dir)
 
-        # Find the wheel file
+        # Find the wheel file matching current platform
         wheels = list(self.sdk_dir.rglob("macaw_client-*.whl"))
         if not wheels:
             raise FileNotFoundError(f"No macaw_client wheel found in {self.sdk_zip}")
-        self.wheel_path = wheels[0]
+
+        # Select wheel matching current Python version and platform
+        py_version = f"cp{sys.version_info.major}{sys.version_info.minor}"
+
+        # Determine platform tag
+        import platform
+        system = platform.system().lower()
+        machine = platform.machine().lower()
+
+        if system == "darwin":
+            if machine == "arm64":
+                platform_tag = "macosx_11_0_arm64"
+            else:
+                platform_tag = "macosx_10_9_x86_64"
+        elif system == "linux":
+            platform_tag = "manylinux_2_17_x86_64"
+        elif system == "windows":
+            platform_tag = "win_amd64"
+        else:
+            platform_tag = None
+
+        # Find matching wheel
+        self.wheel_path = None
+        for wheel in wheels:
+            wheel_name = wheel.name
+            if py_version in wheel_name and (platform_tag is None or platform_tag in wheel_name):
+                self.wheel_path = wheel
+                break
+
+        if not self.wheel_path:
+            # Fall back to any wheel with matching Python version
+            for wheel in wheels:
+                if py_version in wheel.name:
+                    self.wheel_path = wheel
+                    print(f"   Warning: No exact platform match, using: {wheel.name}")
+                    break
+
+        if not self.wheel_path:
+            raise FileNotFoundError(f"No matching wheel found for {py_version} on {platform_tag}")
+
         print(f"   Found wheel: {self.wheel_path.name}")
 
         # Find .macaw config directory
