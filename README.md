@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
-[![Version](https://img.shields.io/badge/version-0.5.22-green.svg)](https://github.com/macawsecurity/secureAI)
+[![Version](https://img.shields.io/badge/version-0.5.24-green.svg)](https://github.com/macawsecurity/secureAI)
 
 **Drop-in replacements for OpenAI, Anthropic, LangChain, and MCP for deterministic policy-based security controls for enterprise apps.**
 
@@ -161,7 +161,7 @@ response = user_openai.chat.completions.create(...)
 ## Requirements
 
 - **Python 3.9+**
-- **macaw_client v0.5.22+** - The MACAW client library
+- **macaw_client v0.5.24+** - The MACAW client library
 
 ### Getting Started
 
