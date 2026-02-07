@@ -71,8 +71,9 @@ Drop-in replacement for the OpenAI Python SDK with full API compatibility includ
 | `openai_1b_multiuser_bind.py` | Per-user policies via `bind_to_user()` pattern |
 | `openai_1b_multiuser_bind_streaming.py` | Same as 1b with streaming responses |
 | `openai_1c_a2a_invoke.py` | Agent-to-agent calls via `invoke_tool()` |
+| `openai_1d_invocation_patterns.py` | Compares both invocation patterns side-by-side |
 
-**Progression**: Start with 1a for single-user apps. Move to 1b when you need different permissions per user (SaaS). Use 1c for agent orchestration systems.
+**Progression**: Start with 1a for single-user apps. Move to 1b when you need different permissions per user (SaaS). Use 1c for agent orchestration systems. See 1d to understand how both patterns achieve the same security guarantees.
 
 ### Anthropic (`anthropic/`)
 
@@ -119,6 +120,21 @@ Drop-in replacements for LangChain agent components with MACAW security controls
 | `langchain_1f_memory.py` | Memory integration with security |
 
 **Progression**: Start with 1a to add tool access control to a single agent. Use 1b when different users need different tool permissions. Use 1c for multi-agent systems where each agent has isolated permissions.
+
+### External Attestations (`attestations/`)
+
+Human-in-the-loop approval workflows for sensitive operations. Request blocks until a manager/admin approves.
+
+| Example | Description |
+|---------|-------------|
+| `1a_trade_alice.py` | Requester: High-value trade blocks for manager approval |
+| `1a_trade_bob.py` | Approver: Manager approves/denies pending requests |
+| `1b_grant_researcher.py` | Requester: First call blocks, subsequent calls instant |
+| `1b_grant_admin.py` | Approver: Admin grants reusable capability |
+
+**Progression**: Start with 1a to understand one-time approvals (each trade needs fresh approval). Use 1b for capability grants (approve once, use many times within TTL).
+
+**Two-terminal pattern**: Run the requester script first, then run the approver script in another terminal while the requester waits.
 
 ## Running the Examples
 
