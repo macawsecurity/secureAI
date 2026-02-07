@@ -9,10 +9,6 @@ Tests progress reporting in the calculator server:
 Run securemcp_calculator.py first, then run this client.
 """
 
-import sys
-from pathlib import Path
-
-
 from macaw_adapters.mcp import Client
 
 

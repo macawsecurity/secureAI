@@ -5,10 +5,6 @@ SecureMCP Calculator Server
 Run this first, then use 1a_simple_invocation.py to test.
 """
 
-import sys
-from pathlib import Path
-
-
 from macaw_adapters.mcp import SecureMCP, Context
 
 mcp = SecureMCP("calculator")

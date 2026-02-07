@@ -10,10 +10,8 @@ MAPL resource policies. Tools use ctx.get_roots() to check boundaries.
 Run this server, then run 1g_roots_client.py in another terminal.
 """
 
-import sys
 import os
 from pathlib import Path
-
 
 from macaw_adapters.mcp import SecureMCP, Context
 

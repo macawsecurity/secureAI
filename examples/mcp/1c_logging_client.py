@@ -10,10 +10,6 @@ Run securemcp_calculator.py first, then run this client.
 Check MACAW logs to see the logged events.
 """
 
-import sys
-from pathlib import Path
-
-
 from macaw_adapters.mcp import Client
 
 

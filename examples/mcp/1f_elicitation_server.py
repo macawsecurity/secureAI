@@ -10,10 +10,6 @@ information from the user during execution.
 Run this server, then run 1f_elicitation_client.py in another terminal.
 """
 
-import sys
-from pathlib import Path
-
-
 from macaw_adapters.mcp import SecureMCP, Context
 
 mcp = SecureMCP("elicitation-demo")

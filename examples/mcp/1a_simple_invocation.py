@@ -11,10 +11,6 @@ Demonstrates:
 Run securemcp_calculator.py first, then run this.
 """
 
-import sys
-from pathlib import Path
-
-
 from macaw_adapters.mcp import Client
 
 

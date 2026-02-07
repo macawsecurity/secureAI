@@ -12,10 +12,7 @@ Demonstrates:
 Run 1g_roots_server.py first, then run this client.
 """
 
-import sys
 import asyncio
-from pathlib import Path
-
 
 from macaw_adapters.mcp import Client
 

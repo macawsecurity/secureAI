@@ -13,10 +13,7 @@ Demonstrates:
 Run securemcp_calculator.py first, then run this.
 """
 
-import sys
 import asyncio
-from pathlib import Path
-
 
 from macaw_adapters.mcp import Client
 

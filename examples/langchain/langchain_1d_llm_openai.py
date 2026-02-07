@@ -13,7 +13,6 @@ Run with:
 """
 
 import os
-import sys
 
 # BEFORE: from langchain_openai import ChatOpenAI
 # AFTER:

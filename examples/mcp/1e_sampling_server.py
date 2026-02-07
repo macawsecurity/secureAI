@@ -10,10 +10,6 @@ the client's configured LLM handler.
 Run this server, then run 1e_sampling_client.py in another terminal.
 """
 
-import sys
-from pathlib import Path
-
-
 from macaw_adapters.mcp import SecureMCP, Context
 
 mcp = SecureMCP("sampling-demo")

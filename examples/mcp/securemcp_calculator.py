@@ -15,11 +15,8 @@ Demonstrates the FastMCP-compatible SecureMCP API:
 This is the recommended way to build MCP servers with MACAW security.
 """
 
-import sys
 import asyncio
-from pathlib import Path
 from typing import List, Dict, Any
-
 
 from macaw_adapters.mcp import SecureMCP, Context
 

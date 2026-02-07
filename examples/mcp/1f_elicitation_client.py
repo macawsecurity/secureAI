@@ -10,10 +10,6 @@ the server's ctx.elicit() is called.
 Run 1f_elicitation_server.py first, then run this client.
 """
 
-import sys
-from pathlib import Path
-
-
 from macaw_adapters.mcp import Client
 
 
