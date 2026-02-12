@@ -19,6 +19,8 @@ These adapters are thin wrappers that route requests through the MACAW security 
 - **Cryptographic audit trail** - Complete record of all AI operations with signatures
 - **Zero code changes** - Your existing code works unchanged
 
+Learn more about our research: [Authenticated Workflows](https://arxiv.org/abs/2602.10465) | [Protecting Context and Prompts](https://arxiv.org/abs/2602.10481)
+
 ## Installation
 
 ```bash
@@ -227,10 +229,17 @@ Console > Dev Hub
 
 Access at [console.macawsecurity.ai](https://console.macawsecurity.ai) → Dev Hub tab.
 
+## Research
+
+Learn more about the technical foundations of MACAW:
+
+- **[Authenticated Workflows: A Systems Approach to Protecting Agentic AI](https://arxiv.org/abs/2602.10465)**
+- **[Protecting Context and Prompts: Deterministic Security for Non-Deterministic AI](https://arxiv.org/abs/2602.10481)**
+
 ## Links
 
 - **GitHub**: [github.com/macawsecurity/secureAI](https://github.com/macawsecurity/secureAI)
-- **Documentation**: [docs.macawsecurity.ai](https://docs.macawsecurity.ai)
+- **Documentation**: [www.macawsecurity.ai/docs](https://www.macawsecurity.ai/docs)
 - **Console**: [console.macawsecurity.ai](https://console.macawsecurity.ai)
 - **Support**: help@macawsecurity.com
 
