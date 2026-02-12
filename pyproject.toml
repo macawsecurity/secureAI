@@ -54,8 +54,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://macawsecurity.ai"
-Documentation = "https://macawsecurity.ai/docs"
+Homepage = "https://www.macawsecurity.ai"
+Documentation = "https://www.macawsecurity.ai/docs"
 Repository = "https://github.com/macawsecurity/secureAI"
 Console = "https://console.macawsecurity.ai"
 
