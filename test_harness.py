@@ -2,17 +2,17 @@
 """
 MACAW Adapters Test Harness
 
-Tests all examples in secureAI/examples/ using a fresh Python environment
-with the MACAW client SDK installed.
+Tests all examples in secureAI/examples/.
 
 Usage:
-    python3 test_harness.py \\
-        --sdk-zip ~/Downloads/macaw-client-0.5.23-macOS-ARM64-py3.9.zip \\
-        --openai-key sk-proj-... \\
-        --anthropic-key sk-ant-...
+    # Quick mode - use current Python environment (after pip install)
+    python3 test_harness.py
+
+    # Full integration test - extracts SDK and creates fresh venv
+    python3 test_harness.py --sdk-zip ~/Downloads/macaw-client-*.zip
 
 Options:
-    --sdk-zip         Path to the downloaded MACAW client SDK zip file (required)
+    --sdk-zip         Path to SDK zip file (optional - enables full integration test)
     --openai-key      OpenAI API key for OpenAI/LangChain examples
     --anthropic-key   Anthropic API key for Anthropic/LangChain examples
     --install-local   Install macaw-adapters from local dist/ instead of PyPI
@@ -57,7 +57,7 @@ class TestHarness:
     def __init__(
         self,
         examples_dir: Path,
-        sdk_zip: Path,
+        sdk_zip: Optional[Path] = None,
         openai_key: Optional[str] = None,
         anthropic_key: Optional[str] = None,
         install_local: bool = False,
@@ -69,6 +69,7 @@ class TestHarness:
         self.anthropic_key = anthropic_key
         self.install_local = install_local
         self.verbose = verbose
+        self.quick_mode = sdk_zip is None
 
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.harness_dir = Path(f"/tmp/macaw-harness-{self.timestamp}")
@@ -77,11 +78,24 @@ class TestHarness:
         self.results_dir = self.harness_dir / "results"
         self.test_cases: List[TestCase] = []
 
+        # In quick mode, use current Python interpreter
+        if self.quick_mode:
+            self.python = Path(sys.executable)
+            self.macaw_config_dir = None
+
     def setup(self):
         """Create harness directory, extract SDK, and set up virtual environment."""
         print("=" * 60)
         print("MACAW Test Harness Setup")
         print("=" * 60)
+
+        if self.quick_mode:
+            print("\nQuick mode: Using current Python environment")
+            print(f"Python: {self.python}")
+            self.results_dir = Path(f"/tmp/macaw-harness-{self.timestamp}")
+            self.results_dir.mkdir(parents=True, exist_ok=True)
+            return
+
         print(f"\nHarness directory: {self.harness_dir}")
 
         # Create directories
@@ -525,28 +539,23 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run with all keys
-  python3 test_harness.py \\
-      --sdk-zip ~/Downloads/macaw-client-0.5.23-macOS-ARM64-py3.9.zip \\
-      --openai-key sk-proj-... \\
-      --anthropic-key sk-ant-...
+  # Quick mode - use current environment (after pip install)
+  python3 test_harness.py
 
-  # Run with local macaw-adapters build
-  python3 test_harness.py \\
-      --sdk-zip ~/Downloads/macaw-client-0.5.23.zip \\
-      --openai-key sk-proj-... \\
-      --install-local
+  # Full integration test - extracts SDK zip and creates fresh venv
+  python3 test_harness.py --sdk-zip ~/Downloads/macaw-client-*.zip
 
-  # Run MCP tests only (no API keys needed)
-  python3 test_harness.py \\
-      --sdk-zip ~/Downloads/macaw-client-0.5.23.zip
+  # With API keys for LLM tests
+  python3 test_harness.py --openai-key sk-proj-... --anthropic-key sk-ant-...
+
+  # MCP tests only (no API keys needed)
+  python3 test_harness.py
 """,
     )
     parser.add_argument(
         "--sdk-zip",
         type=Path,
-        required=True,
-        help="Path to the MACAW client SDK zip file",
+        help="Path to SDK zip file (optional - enables full integration test mode)",
     )
     parser.add_argument(
         "--openai-key",
@@ -571,8 +580,8 @@ Examples:
 
     args = parser.parse_args()
 
-    # Validate SDK zip exists
-    if not args.sdk_zip.exists():
+    # Validate SDK zip exists (if provided)
+    if args.sdk_zip and not args.sdk_zip.exists():
         print(f"Error: SDK zip not found: {args.sdk_zip}")
         sys.exit(1)
 
@@ -583,6 +592,12 @@ Examples:
     if not examples_dir.exists():
         print(f"Error: Examples directory not found: {examples_dir}")
         sys.exit(1)
+
+    # Quick mode info
+    if not args.sdk_zip:
+        print("Running in quick mode (using current Python environment)")
+        print("For full integration test, use: --sdk-zip path/to/macaw-client-*.zip")
+        print()
 
     harness = TestHarness(
         examples_dir=examples_dir,
