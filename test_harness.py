@@ -329,12 +329,13 @@ class TestHarness:
             print(f"  {cat}: {count}")
 
     def _check_keys(self, test: TestCase) -> tuple[bool, list]:
-        """Check if required API keys are available."""
+        """Check if required API keys are available (from args or environment)."""
         missing = []
         for key in test.requires_keys:
-            if key == "OPENAI_API_KEY" and not self.openai_key:
+            # Check command line args first, then environment
+            if key == "OPENAI_API_KEY" and not (self.openai_key or os.environ.get("OPENAI_API_KEY")):
                 missing.append(key)
-            elif key == "ANTHROPIC_API_KEY" and not self.anthropic_key:
+            elif key == "ANTHROPIC_API_KEY" and not (self.anthropic_key or os.environ.get("ANTHROPIC_API_KEY")):
                 missing.append(key)
         return len(missing) == 0, missing
 
