@@ -385,7 +385,7 @@ class TestHarness:
                     stderr=subprocess.PIPE,
                     preexec_fn=os.setsid,
                 )
-                time.sleep(3)  # Wait for server to start
+                time.sleep(10)  # Wait for server to register with control plane
 
                 if server_proc.poll() is not None:
                     test.result = TestResult.FAIL
