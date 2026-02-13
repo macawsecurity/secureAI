@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
-[![Version](https://img.shields.io/badge/version-0.5.24-green.svg)](https://github.com/macawsecurity/secureAI)
+[![Version](https://img.shields.io/badge/version-0.5.25-green.svg)](https://github.com/macawsecurity/secureAI)
 
 **Drop-in replacements for OpenAI, Anthropic, LangChain, and MCP for deterministic policy-based security controls for enterprise apps.**
 
@@ -23,15 +23,21 @@ Learn more about our research: [Authenticated Workflows](https://arxiv.org/abs/2
 
 ## Installation
 
+**From PyPI:**
 ```bash
-# Install with specific adapter
+pip install macaw-adapters[all]
+
+# Or install specific adapters only
 pip install macaw-adapters[openai]
 pip install macaw-adapters[anthropic]
 pip install macaw-adapters[langchain]
 pip install macaw-adapters[mcp]
+```
 
-# Install all adapters
-pip install macaw-adapters[all]
+**From source:**
+```bash
+git clone https://github.com/macawsecurity/secureAI.git
+pip install "./secureAI[all]"
 ```
 
 ## Quick Start
@@ -163,7 +169,7 @@ response = user_openai.chat.completions.create(...)
 ## Requirements
 
 - **Python 3.9+**
-- **macaw_client v0.5.24+** - The MACAW client library
+- **macaw_client v0.5.25+** - The MACAW client library (download from console)
 
 ### Getting Started
 
