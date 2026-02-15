@@ -511,7 +511,7 @@ class TestHarness:
             f.write(f"{'=' * 60}\n")
             f.write(f"Generated: {datetime.now().isoformat()}\n")
             f.write(f"Harness:   {self.harness_dir}\n")
-            f.write(f"SDK:       {self.sdk_zip.name}\n")
+            f.write(f"SDK:       {self.sdk_zip.name if self.sdk_zip else 'quick mode (current environment)'}\n")
             f.write(f"OpenAI:    {'yes' if self.openai_key else 'no'}\n")
             f.write(f"Anthropic: {'yes' if self.anthropic_key else 'no'}\n")
             f.write(f"{'=' * 60}\n\n")
