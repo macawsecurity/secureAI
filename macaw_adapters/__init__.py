@@ -17,7 +17,7 @@ Prerequisites:
 For more information, visit: https://macawsecurity.ai
 """
 
-__version__ = "0.5.26"
+__version__ = "0.5.27"
 __author__ = "MACAW Security"
 __license__ = "Apache-2.0"
 
