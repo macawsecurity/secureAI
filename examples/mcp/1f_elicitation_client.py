@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 """
-Example 1f: MCP Elicitation - CLIENT
+1f_elicitation_client.py - MCP Elicitation (Server->User Input)
 
 Demonstrates client.set_elicitation_handler() for server->user input.
 
 The client registers an input handler that prompts the user when
 the server's ctx.elicit() is called.
 
-Run 1f_elicitation_server.py first, then run this client.
+NOTE: This example requires interactive user input and is not suitable
+for automated test harnesses.
+
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Elicitation server running (1f_elicitation_server.py)
+
+Run:
+    # Terminal 1: Start the server
+    python 1f_elicitation_server.py
+
+    # Terminal 2: Run this client (interactive)
+    python 1f_elicitation_client.py
 """
 
 from macaw_adapters.mcp import Client
@@ -100,4 +112,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 50)
+        if "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure MACAW is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 50)
+        import sys
+        sys.exit(1)

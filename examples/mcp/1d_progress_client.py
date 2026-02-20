@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 """
-Example 1d: Progress Reporting - CLIENT
+1d_progress_client.py - Progress Reporting
 
 Tests progress reporting in the calculator server:
 - batch_calculate() reports progress via ctx.report_progress()
 - Progress events are emitted to MACAW audit system
 
-Run securemcp_calculator.py first, then run this client.
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Calculator server running (securemcp_calculator.py)
+
+Run:
+    # Terminal 1: Start the server
+    python securemcp_calculator.py
+
+    # Terminal 2: Run this client
+    python 1d_progress_client.py
 """
 
 from macaw_adapters.mcp import Client
@@ -76,4 +85,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 50)
+        if "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure MACAW is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 50)
+        import sys
+        sys.exit(1)

@@ -1,8 +1,8 @@
 {
-  "description": "Policy for Reporting team under Analytics",
+  "description": "Policy for Reporting team - passthrough to inherit from BU",
   "extends": "bu:Analytics",
   "policy_id": "team:Reporting",
-  "resources": [],
+  "resources": ["**"],
   "scope": "global",
   "version": "1.0"
 }

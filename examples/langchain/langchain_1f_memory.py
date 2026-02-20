@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1f: Secure Memory (LangChain)
+langchain_1f_memory.py - Secure Memory with MACAW context backing
 
 Drop-in replacement for LangChain memory classes with MACAW context backing.
 Demonstrates multi-session isolation where each user gets separate memory.
@@ -8,8 +8,15 @@ Demonstrates multi-session isolation where each user gets separate memory.
 Use this when: You want conversation memory backed by MACAW's secure context
 vault with audit logging and session isolation.
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python langchain_1f_memory.py
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - OPENAI_API_KEY environment variable (optional, for LLM demo)
+
+Run:
+    python langchain_1f_memory.py
+    # Or with OpenAI demo:
+    export OPENAI_API_KEY=sk-...
+    python langchain_1f_memory.py
 """
 
 import os
@@ -192,4 +199,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "OPENAI_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: OpenAI API key not configured")
+            print("Fix: export OPENAI_API_KEY=sk-...")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        import sys
+        sys.exit(1)

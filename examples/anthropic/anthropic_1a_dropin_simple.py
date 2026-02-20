@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 """
-Example 1a: Drop-in Replacement (Anthropic)
+anthropic_1a_dropin_simple.py - Drop-in replacement for Anthropic client
 
-The simplest path - just replace your import and it works.
-Use this when: Single app, no user distinction, app-level policies.
+The simplest integration path - just replace your import and it works.
+No Identity Provider needed.
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python anthropic_1a_dropin_simple.py
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - ANTHROPIC_API_KEY environment variable
+
+Run:
+    export ANTHROPIC_API_KEY=sk-ant-...
+    python anthropic_1a_dropin_simple.py
 """
 
 import os
+import sys
 
 # BEFORE: from anthropic import Anthropic
 # AFTER:
@@ -83,4 +89,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "ANTHROPIC_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: Anthropic API key not configured")
+            print("Fix: export ANTHROPIC_API_KEY=sk-ant-...")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

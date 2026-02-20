@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1d: Invocation Patterns (OpenAI)
+openai_1d_invocation_patterns.py - Compare invoke_tool vs bind_to_user
 
 Compares two ways to invoke SecureOpenAI with the same security guarantees:
 
@@ -16,20 +16,24 @@ PATH 2: bind_to_user wrapper
   - Internally calls invoke_tool
   - Use when: Drop-in replacement, developer ergonomics
 
-Both paths:
-  - Auto-create authenticated prompts via registry lookup
-  - Enforce per-user policies (model restrictions, token limits)
-  - Propagate JWT identity through the call chain
+Both paths enforce per-user policies and propagate JWT identity.
 
 Prerequisites:
-    - Identity provider setup (see setup/README.md)
-    - Policies loaded for alice and bob (see policies/)
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - OPENAI_API_KEY environment variable
+    - Identity Provider configured (Console -> Settings -> Identity Bridge)
+    - Test users: alice/Alice123!, bob/Bob@123!
 
-Run with:
+Run:
+    export OPENAI_API_KEY=sk-...
     python openai_1d_invocation_patterns.py
+
+No IdP configured? Run simpler example first:
+    python openai_1a_dropin_simple.py
 """
 
 import os
+import sys
 
 from macaw_adapters.openai import SecureOpenAI
 from macaw_client import MACAWClient, RemoteIdentityProvider
@@ -314,4 +318,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "OPENAI_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: OpenAI API key not configured")
+            print("Fix: export OPENAI_API_KEY=sk-...")
+        elif "Local provider does not support" in err:
+            print("ERROR: Identity Provider not configured")
+            print("Fix: Console -> Settings -> Identity Bridge")
+            print("\nOr run simpler example first:")
+            print("  python openai_1a_dropin_simple.py")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

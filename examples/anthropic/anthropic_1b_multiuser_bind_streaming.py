@@ -1,22 +1,26 @@
 #!/usr/bin/env python3
 """
-Example 1b-stream: Multi-user with Streaming (Anthropic)
+anthropic_1b_multiuser_bind_streaming.py - Multi-user Anthropic with streaming
 
-Use this when: SaaS app with real-time streaming responses.
-Policy checks happen BEFORE streaming starts.
-
-NOTE: Claude uses messages.stream() context manager pattern,
-not stream=True like OpenAI.
+Same as 1b but demonstrates streaming responses with bind_to_user pattern.
+Claude uses messages.stream() context manager pattern.
 
 Prerequisites:
-    - Identity provider setup (see setup/README.md)
-    - Policies loaded for alice and bob (see policies/)
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - ANTHROPIC_API_KEY environment variable
+    - Identity Provider configured (Console -> Settings -> Identity Bridge)
+    - Test users: alice/Alice123!, bob/Bob@123!
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python anthropic_1b_multiuser_bind_streaming.py
+Run:
+    export ANTHROPIC_API_KEY=sk-ant-...
+    python anthropic_1b_multiuser_bind_streaming.py
+
+No IdP configured? Run simpler example first:
+    python anthropic_1a_dropin_simple.py
 """
 
 import os
+import sys
 
 from macaw_adapters.anthropic import SecureAnthropic
 from macaw_client import MACAWClient, RemoteIdentityProvider
@@ -167,4 +171,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "ANTHROPIC_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: Anthropic API key not configured")
+            print("Fix: export ANTHROPIC_API_KEY=sk-ant-...")
+        elif "Local provider does not support" in err:
+            print("ERROR: Identity Provider not configured")
+            print("Fix: Console -> Settings -> Identity Bridge")
+            print("\nOr run simpler example first:")
+            print("  python anthropic_1a_dropin_simple.py")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1c: Agent Orchestration (LangChain)
+langchain_1c_orchestration.py - Agent Orchestration with supervisor routing
 
 A supervisor agent routes tasks to specialized sub-agents, each with different
 security policies. Demonstrates policy composition where chains can only
@@ -14,8 +14,13 @@ In this example:
 - Finance Agent: Can use calculator, file_reader (reports only)
 - Admin Agent: Can use admin tools (restricted access)
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python langchain_1c_orchestration.py
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - OPENAI_API_KEY environment variable (for ChatOpenAI)
+
+Run:
+    export OPENAI_API_KEY=sk-...
+    python langchain_1c_orchestration.py
 """
 
 import os
@@ -312,4 +317,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "OPENAI_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: OpenAI API key not configured")
+            print("Fix: export OPENAI_API_KEY=sk-...")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        import sys
+        sys.exit(1)

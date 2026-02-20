@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1e: SecureChatAnthropic (LangChain)
+langchain_1e_llm_anthropic.py - SecureChatAnthropic drop-in replacement
 
 Drop-in replacement for langchain_anthropic.ChatAnthropic with MACAW protection.
 Demonstrates invoke and streaming with audit logging.
@@ -8,8 +8,13 @@ Demonstrates invoke and streaming with audit logging.
 Use this when: You want MACAW security on LangChain Anthropic calls without
 changing your application code.
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python langchain_1e_llm_anthropic.py
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - ANTHROPIC_API_KEY environment variable
+
+Run:
+    export ANTHROPIC_API_KEY=sk-ant-...
+    python langchain_1e_llm_anthropic.py
 """
 
 import os
@@ -110,4 +115,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "ANTHROPIC_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: Anthropic API key not configured")
+            print("Fix: export ANTHROPIC_API_KEY=sk-ant-...")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        import sys
+        sys.exit(1)

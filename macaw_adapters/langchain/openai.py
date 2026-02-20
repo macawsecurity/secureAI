@@ -8,23 +8,30 @@ Usage:
     # Same API, MACAW security is invisible
     llm = ChatOpenAI(model="gpt-4")
     response = llm.invoke("Hello, world!")
+
+Security:
+    This adapter uses SecureOpenAI internally, which routes all LLM calls through
+    MACAW's Policy Enforcement Point (PEP) via invoke_tool. This ensures:
+    - Policy enforcement on every LLM call
+    - Cryptographic audit logging
+    - Per-user identity propagation via bind_to_user
 """
 
 import logging
 from typing import Any, Dict, Iterator, List, Optional
 
-from macaw_client import MACAWClient
-from ._utils import get_or_create_client, cleanup_client
-
 logger = logging.getLogger(__name__)
+
+# Global registry of ChatOpenAI instances for cleanup
+_instances: List['ChatOpenAI'] = []
 
 
 class ChatOpenAI:
     """
     Drop-in replacement for langchain_openai.ChatOpenAI with MACAW protection.
 
-    This class wraps the original ChatOpenAI and routes all LLM calls through
-    MACAWClient for policy enforcement, audit logging, and security.
+    Uses SecureOpenAI internally to route all LLM calls through MACAW's PEP.
+    This ensures policy enforcement, not just logging.
 
     MACAW is completely invisible - use exactly like native LangChain.
     """
@@ -39,7 +46,6 @@ class ChatOpenAI:
         organization: Optional[str] = None,
         timeout: Optional[float] = None,
         max_retries: int = 2,
-        macaw_client: Optional[MACAWClient] = None,
         **kwargs
     ):
         """
@@ -54,65 +60,114 @@ class ChatOpenAI:
             organization: OpenAI organization ID
             timeout: Request timeout in seconds
             max_retries: Maximum retry attempts
-            macaw_client: Optional pre-configured MACAWClient
-            **kwargs: Additional arguments passed to underlying ChatOpenAI
+            **kwargs: Additional arguments
         """
         # Store configuration
         self.model_name = model
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.api_key = api_key
-        self.base_url = base_url
-        self.organization = organization
-        self.timeout = timeout
-        self.max_retries = max_retries
         self._kwargs = kwargs
 
-        # Initialize MACAW client
-        self._macaw = macaw_client or get_or_create_client("langchain-openai")
+        # Store optional config for reference (not passed to SecureOpenAI)
+        self._base_url = base_url
+        self._organization = organization
+        self._timeout = timeout
+        self._max_retries = max_retries
 
-        # Lazy-load the actual langchain_openai.ChatOpenAI
-        self._llm = None
+        # Create SecureOpenAI internally - it handles its own MACAWClient
+        # SecureOpenAI accepts: api_key, app_name, intent_policy
+        from macaw_adapters.openai import SecureOpenAI
 
-    def _get_llm(self):
-        """Lazy-load the underlying ChatOpenAI instance."""
-        if self._llm is None:
-            try:
-                from langchain_openai import ChatOpenAI as _ChatOpenAI
-                self._llm = _ChatOpenAI(
-                    model=self.model_name,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                    api_key=self.api_key,
-                    base_url=self.base_url,
-                    organization=self.organization,
-                    timeout=self.timeout,
-                    max_retries=self.max_retries,
-                    **self._kwargs
-                )
-            except ImportError:
-                raise ImportError(
-                    "langchain_openai is required. Install with: pip install langchain-openai"
-                )
-        return self._llm
+        self._secure_openai = SecureOpenAI(
+            app_name="langchain-openai",
+            api_key=api_key
+        )
 
-    def _format_input(self, input_data: Any) -> str:
-        """Convert various input formats to string for MACAW."""
+        # Track for cleanup
+        _instances.append(self)
+
+        logger.debug(f"[ChatOpenAI] Created with SecureOpenAI backend, model={model}")
+
+    def _to_openai_messages(self, input_data: Any) -> List[Dict[str, str]]:
+        """Convert LangChain input to OpenAI message format."""
         if isinstance(input_data, str):
-            return input_data
-        elif isinstance(input_data, list):
-            # List of messages
-            parts = []
+            return [{"role": "user", "content": input_data}]
+
+        if isinstance(input_data, list):
+            messages = []
             for msg in input_data:
-                if hasattr(msg, 'content'):
-                    parts.append(str(msg.content))
+                if hasattr(msg, 'type') and hasattr(msg, 'content'):
+                    # LangChain message object (HumanMessage, AIMessage, etc.)
+                    role_map = {
+                        "human": "user",
+                        "ai": "assistant",
+                        "system": "system",
+                        "function": "function",
+                        "tool": "tool"
+                    }
+                    role = role_map.get(msg.type, "user")
+                    messages.append({"role": role, "content": str(msg.content)})
                 elif isinstance(msg, dict):
-                    parts.append(str(msg.get('content', msg)))
+                    # Already in dict format
+                    messages.append(msg)
                 else:
-                    parts.append(str(msg))
-            return "\n".join(parts)
-        else:
-            return str(input_data)
+                    # Fallback: treat as user message
+                    messages.append({"role": "user", "content": str(msg)})
+            return messages
+
+        # Fallback: single user message
+        return [{"role": "user", "content": str(input_data)}]
+
+    def _to_langchain_message(self, openai_response: Any) -> Any:
+        """Convert OpenAI ChatCompletion to LangChain AIMessage."""
+        try:
+            from langchain_core.messages import AIMessage
+
+            # Handle dict response
+            if isinstance(openai_response, dict):
+                choices = openai_response.get("choices", [])
+                if choices:
+                    content = choices[0].get("message", {}).get("content", "")
+                    return AIMessage(content=content)
+                return AIMessage(content="")
+
+            # Handle ChatCompletion object
+            if hasattr(openai_response, 'choices') and openai_response.choices:
+                content = openai_response.choices[0].message.content or ""
+                return AIMessage(content=content)
+
+            return AIMessage(content=str(openai_response))
+
+        except ImportError:
+            # langchain_core not available, return raw response
+            logger.warning("langchain_core not installed, returning raw response")
+            return openai_response
+
+    def _to_langchain_chunk(self, openai_chunk: Any) -> Any:
+        """Convert OpenAI streaming chunk to LangChain AIMessageChunk."""
+        try:
+            from langchain_core.messages import AIMessageChunk
+
+            # Handle dict chunk
+            if isinstance(openai_chunk, dict):
+                choices = openai_chunk.get("choices", [])
+                if choices:
+                    delta = choices[0].get("delta", {})
+                    content = delta.get("content", "")
+                    return AIMessageChunk(content=content)
+                return AIMessageChunk(content="")
+
+            # Handle ChatCompletionChunk object
+            if hasattr(openai_chunk, 'choices') and openai_chunk.choices:
+                delta = openai_chunk.choices[0].delta
+                content = delta.content if delta and delta.content else ""
+                return AIMessageChunk(content=content)
+
+            return AIMessageChunk(content="")
+
+        except ImportError:
+            # Return raw chunk
+            return openai_chunk
 
     def invoke(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Any:
         """
@@ -124,29 +179,28 @@ class ChatOpenAI:
             **kwargs: Additional arguments
 
         Returns:
-            LLM response (AIMessage or similar)
+            LLM response (AIMessage)
         """
-        llm = self._get_llm()
+        # Convert to OpenAI format
+        messages = self._to_openai_messages(input)
 
-        # Route through MACAW for policy/audit
-        if self._macaw:
-            prompt_str = self._format_input(input)
-            logger.debug(f"[SecureChatOpenAI] Routing invoke through MACAW")
+        # Build params
+        params = {
+            "model": self.model_name,
+            "messages": messages,
+            "temperature": self.temperature,
+        }
+        if self.max_tokens:
+            params["max_tokens"] = self.max_tokens
 
-            # Log the invocation through MACAW
-            self._macaw.log_event(
-                event_type="llm_invoke",
-                action="invoke",
-                target=f"openai:{self.model_name}",
-                metadata={
-                    "model": self.model_name,
-                    "prompt_length": len(prompt_str),
-                    "temperature": self.temperature
-                }
-            )
+        # Merge additional kwargs
+        params.update(kwargs)
 
-        # Call underlying LLM
-        return llm.invoke(input, config=config, **kwargs)
+        # Call SecureOpenAI (routes through PEP!)
+        response = self._secure_openai.chat.completions.create(**params)
+
+        # Convert to LangChain format
+        return self._to_langchain_message(response)
 
     def stream(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Iterator:
         """
@@ -158,27 +212,26 @@ class ChatOpenAI:
             **kwargs: Additional arguments
 
         Yields:
-            Streaming chunks from the LLM
+            Streaming chunks (AIMessageChunk)
         """
-        llm = self._get_llm()
+        # Convert to OpenAI format
+        messages = self._to_openai_messages(input)
 
-        # Route through MACAW for policy/audit
-        if self._macaw:
-            prompt_str = self._format_input(input)
-            logger.debug(f"[SecureChatOpenAI] Routing stream through MACAW")
+        # Build params
+        params = {
+            "model": self.model_name,
+            "messages": messages,
+            "temperature": self.temperature,
+            "stream": True,
+        }
+        if self.max_tokens:
+            params["max_tokens"] = self.max_tokens
 
-            self._macaw.log_event(
-                event_type="llm_stream",
-                action="stream",
-                target=f"openai:{self.model_name}",
-                metadata={
-                    "model": self.model_name,
-                    "prompt_length": len(prompt_str)
-                }
-            )
+        params.update(kwargs)
 
-        # Stream from underlying LLM
-        yield from llm.stream(input, config=config, **kwargs)
+        # Stream from SecureOpenAI (routes through PEP!)
+        for chunk in self._secure_openai.chat.completions.create(**params):
+            yield self._to_langchain_chunk(chunk)
 
     def batch(self, inputs: List[Any], config: Optional[Dict] = None, **kwargs) -> List:
         """
@@ -190,69 +243,41 @@ class ChatOpenAI:
             **kwargs: Additional arguments
 
         Returns:
-            List of LLM responses
+            List of LLM responses (AIMessage)
         """
-        llm = self._get_llm()
-
-        # Route through MACAW for policy/audit
-        if self._macaw:
-            logger.debug(f"[SecureChatOpenAI] Routing batch ({len(inputs)} items) through MACAW")
-
-            self._macaw.log_event(
-                event_type="llm_batch",
-                action="batch",
-                target=f"openai:{self.model_name}",
-                metadata={
-                    "model": self.model_name,
-                    "batch_size": len(inputs)
-                }
-            )
-
-        return llm.batch(inputs, config=config, **kwargs)
+        # Process each input through invoke (each goes through PEP)
+        return [self.invoke(input, config=config, **kwargs) for input in inputs]
 
     async def ainvoke(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Any:
         """Async invoke with MACAW protection."""
-        llm = self._get_llm()
-
-        if self._macaw:
-            prompt_str = self._format_input(input)
-            self._macaw.log_event(
-                event_type="llm_ainvoke",
-                action="ainvoke",
-                target=f"openai:{self.model_name}",
-                metadata={"model": self.model_name, "prompt_length": len(prompt_str)}
-            )
-
-        return await llm.ainvoke(input, config=config, **kwargs)
+        # For now, delegate to sync version
+        # TODO: Add true async support when SecureOpenAI supports it
+        return self.invoke(input, config=config, **kwargs)
 
     async def astream(self, input: Any, config: Optional[Dict] = None, **kwargs):
         """Async stream with MACAW protection."""
-        llm = self._get_llm()
-
-        if self._macaw:
-            self._macaw.log_event(
-                event_type="llm_astream",
-                action="astream",
-                target=f"openai:{self.model_name}",
-                metadata={"model": self.model_name}
-            )
-
-        async for chunk in llm.astream(input, config=config, **kwargs):
+        # Yield from sync stream
+        for chunk in self.stream(input, config=config, **kwargs):
             yield chunk
 
     async def abatch(self, inputs: List[Any], config: Optional[Dict] = None, **kwargs) -> List:
         """Async batch with MACAW protection."""
-        llm = self._get_llm()
+        return self.batch(inputs, config=config, **kwargs)
 
-        if self._macaw:
-            self._macaw.log_event(
-                event_type="llm_abatch",
-                action="abatch",
-                target=f"openai:{self.model_name}",
-                metadata={"model": self.model_name, "batch_size": len(inputs)}
-            )
+    def bind_to_user(self, user_client: 'MACAWClient') -> 'BoundChatOpenAI':
+        """
+        Bind this LLM to a specific user's identity.
 
-        return await llm.abatch(inputs, config=config, **kwargs)
+        Returns a BoundChatOpenAI that routes all calls through the user's
+        MACAWClient for per-user policy enforcement.
+
+        Args:
+            user_client: MACAWClient with user identity (from RemoteIdentityProvider)
+
+        Returns:
+            BoundChatOpenAI instance
+        """
+        return BoundChatOpenAI(self, user_client)
 
     # Pass-through properties to match LangChain interface
     @property
@@ -260,23 +285,126 @@ class ChatOpenAI:
         return self.model_name
 
     def bind(self, **kwargs):
-        """Bind arguments to the LLM."""
-        llm = self._get_llm()
-        return llm.bind(**kwargs)
+        """Bind arguments to the LLM (LangChain compatibility)."""
+        # Create a new instance with merged kwargs
+        new_kwargs = {**self._kwargs, **kwargs}
+        return ChatOpenAI(
+            model=self.model_name,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            **new_kwargs
+        )
 
     def with_config(self, config: Dict):
-        """Return a new instance with config."""
-        llm = self._get_llm()
-        return llm.with_config(config)
+        """Return self with config (LangChain compatibility)."""
+        # Config is handled per-call, not stored
+        return self
 
-    def __getattr__(self, name: str) -> Any:
-        """Delegate unknown attributes to underlying LLM."""
-        if name.startswith('_'):
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-        llm = self._get_llm()
-        return getattr(llm, name)
+    def cleanup(self):
+        """Clean up resources."""
+        if hasattr(self, '_secure_openai') and self._secure_openai:
+            try:
+                self._secure_openai.cleanup()
+            except Exception as e:
+                logger.debug(f"Cleanup error (may be expected): {e}")
+
+
+class BoundChatOpenAI:
+    """
+    Per-user wrapper for ChatOpenAI.
+
+    Created via ChatOpenAI.bind_to_user(user_client).
+    Routes all calls through the user's identity for per-user policy enforcement.
+    """
+
+    def __init__(self, parent: ChatOpenAI, user_client: 'MACAWClient'):
+        self._parent = parent
+        self._user_client = user_client
+
+        # Get bound SecureOpenAI for this user
+        self._bound_openai = parent._secure_openai.bind_to_user(user_client)
+
+    def _to_openai_messages(self, input_data: Any) -> List[Dict[str, str]]:
+        """Delegate to parent's conversion."""
+        return self._parent._to_openai_messages(input_data)
+
+    def _to_langchain_message(self, openai_response: Any) -> Any:
+        """Delegate to parent's conversion."""
+        return self._parent._to_langchain_message(openai_response)
+
+    def _to_langchain_chunk(self, openai_chunk: Any) -> Any:
+        """Delegate to parent's conversion."""
+        return self._parent._to_langchain_chunk(openai_chunk)
+
+    def invoke(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Any:
+        """Invoke with user identity."""
+        messages = self._to_openai_messages(input)
+
+        params = {
+            "model": self._parent.model_name,
+            "messages": messages,
+            "temperature": self._parent.temperature,
+        }
+        if self._parent.max_tokens:
+            params["max_tokens"] = self._parent.max_tokens
+        params.update(kwargs)
+
+        # Call through bound SecureOpenAI (user identity!)
+        response = self._bound_openai.chat.completions.create(**params)
+        return self._to_langchain_message(response)
+
+    def stream(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Iterator:
+        """Stream with user identity."""
+        messages = self._to_openai_messages(input)
+
+        params = {
+            "model": self._parent.model_name,
+            "messages": messages,
+            "temperature": self._parent.temperature,
+            "stream": True,
+        }
+        if self._parent.max_tokens:
+            params["max_tokens"] = self._parent.max_tokens
+        params.update(kwargs)
+
+        for chunk in self._bound_openai.chat.completions.create(**params):
+            yield self._to_langchain_chunk(chunk)
+
+    def batch(self, inputs: List[Any], config: Optional[Dict] = None, **kwargs) -> List:
+        """Batch with user identity."""
+        return [self.invoke(input, config=config, **kwargs) for input in inputs]
+
+    async def ainvoke(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Any:
+        """Async invoke with user identity."""
+        return self.invoke(input, config=config, **kwargs)
+
+    async def astream(self, input: Any, config: Optional[Dict] = None, **kwargs):
+        """Async stream with user identity."""
+        for chunk in self.stream(input, config=config, **kwargs):
+            yield chunk
+
+    async def abatch(self, inputs: List[Any], config: Optional[Dict] = None, **kwargs) -> List:
+        """Async batch with user identity."""
+        return self.batch(inputs, config=config, **kwargs)
+
+    @property
+    def model(self) -> str:
+        return self._parent.model_name
+
+    @property
+    def model_name(self) -> str:
+        return self._parent.model_name
+
+    @property
+    def temperature(self) -> float:
+        return self._parent.temperature
 
 
 def cleanup():
-    """Clean up the langchain-openai MACAW client."""
-    cleanup_client("langchain-openai")
+    """Clean up all ChatOpenAI instances."""
+    for instance in _instances:
+        try:
+            instance.cleanup()
+        except Exception as e:
+            logger.debug(f"Cleanup error: {e}")
+    _instances.clear()

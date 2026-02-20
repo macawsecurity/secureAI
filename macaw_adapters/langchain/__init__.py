@@ -3,8 +3,10 @@ MACAW LangChain Adapter - Drop-in replacements for LangChain with MACAW protecti
 
 Usage:
     # LLM providers (mirrors langchain_openai / langchain_anthropic)
-    from macaw_adapters.langchain.openai import ChatOpenAI
-    from macaw_adapters.langchain.anthropic import ChatAnthropic
+    from macaw_adapters.langchain import ChatOpenAI, ChatAnthropic
+
+    # Or use explicit "Secure" names
+    from macaw_adapters.langchain import SecureChatOpenAI, SecureChatAnthropic
 
     # Memory classes (mirrors langchain.memory)
     from macaw_adapters.langchain.memory import ConversationBufferMemory
@@ -17,8 +19,9 @@ Usage:
 
 Features:
     - Drop-in replacement for LangChain components
-    - Policy-enforced tool execution
-    - Secure memory with integrity verification
+    - Policy-enforced LLM calls via SecureOpenAI/SecureAnthropic internally
+    - Policy-enforced tool execution via invoke_tool
+    - Per-user identity propagation via bind_to_user
     - Cryptographic audit trail
 """
 
@@ -33,6 +36,10 @@ from . import callbacks
 # Convenience re-exports
 from .openai import ChatOpenAI
 from .anthropic import ChatAnthropic
+
+# Explicit "Secure" aliases (same classes, clearer naming)
+SecureChatOpenAI = ChatOpenAI
+SecureChatAnthropic = ChatAnthropic
 from .memory import (
     ConversationBufferMemory,
     ConversationBufferWindowMemory,
@@ -43,7 +50,7 @@ from .agents import (
     create_openai_functions_agent,
     AgentExecutor
 )
-from .tools import SecureToolWrapper, wrap_tools
+from .tools import SecureToolWrapper, wrap_tools, secure_tool
 from .callbacks import MACAWCallbackHandler
 from ._utils import cleanup_all
 
@@ -62,9 +69,13 @@ __all__ = [
     'tools',
     'callbacks',
 
-    # LLM classes
+    # LLM classes (drop-in names)
     'ChatOpenAI',
     'ChatAnthropic',
+
+    # LLM classes (explicit Secure names - same classes)
+    'SecureChatOpenAI',
+    'SecureChatAnthropic',
 
     # Memory classes
     'ConversationBufferMemory',
@@ -79,6 +90,7 @@ __all__ = [
     # Tool wrappers
     'SecureToolWrapper',
     'wrap_tools',
+    'secure_tool',
 
     # Callback handler
     'MACAWCallbackHandler',

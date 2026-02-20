@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 """
-Example 1b: Multi-user with bind_to_user (OpenAI)
+openai_1b_multiuser_bind_streaming.py - Multi-user OpenAI with streaming
 
-Use this when: SaaS app, different users need different permissions.
-Each user's JWT identity flows through for policy evaluation.
+Same as 1b but demonstrates streaming responses with bind_to_user pattern.
 
 Prerequisites:
-    - Identity provider setup (see setup/README.md)
-    - Policies loaded for alice and bob (see policies/)
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - OPENAI_API_KEY environment variable
+    - Identity Provider configured (Console -> Settings -> Identity Bridge)
+    - Test users: alice/Alice123!, bob/Bob@123!
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python openai_1b_multiuser_bind.py
+Run:
+    export OPENAI_API_KEY=sk-...
+    python openai_1b_multiuser_bind_streaming.py
+
+No IdP configured? Run simpler example first:
+    python openai_1a_dropin_simple.py
 """
 
 import os
+import sys
 
 from macaw_adapters.openai import SecureOpenAI
 from macaw_client import MACAWClient, RemoteIdentityProvider
@@ -174,4 +180,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "OPENAI_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: OpenAI API key not configured")
+            print("Fix: export OPENAI_API_KEY=sk-...")
+        elif "Local provider does not support" in err:
+            print("ERROR: Identity Provider not configured")
+            print("Fix: Console -> Settings -> Identity Bridge")
+            print("\nOr run simpler example first:")
+            print("  python openai_1a_dropin_simple.py")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

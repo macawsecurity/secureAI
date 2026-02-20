@@ -1,13 +1,24 @@
 #!/usr/bin/env python3
 """
-Example 1c: Context Logging and Audit - CLIENT
+1c_logging_client.py - Context Logging and Audit
 
 Tests logging features in the calculator server:
 - ctx.info(), ctx.debug(), ctx.warning() during calculate()
 - ctx.audit() creates signed audit entries
 
-Run securemcp_calculator.py first, then run this client.
-Check MACAW logs to see the logged events.
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Calculator server running (securemcp_calculator.py)
+
+Run:
+    # Terminal 1: Start the server
+    python securemcp_calculator.py
+
+    # Terminal 2: Run this client
+    python 1c_logging_client.py
+
+Check MACAW logs to see the logged events:
+    ~/.macaw/data/tenants/<tenant>/logs/events.log
 """
 
 from macaw_adapters.mcp import Client
@@ -74,4 +85,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 50)
+        if "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure MACAW is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 50)
+        import sys
+        sys.exit(1)

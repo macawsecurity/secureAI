@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1b: Reusable Capability Grant - Admin
+1b_grant_admin.py - Reusable Capability Grant (Admin Approval)
 
 Admin approves capability grants for researchers.
 Since one_time=False, this approval is REUSABLE.
@@ -10,15 +10,20 @@ This demonstrates:
 - Granting capabilities that persist
 - Future invocations reuse this approval (no blocking)
 
-Run 1b_grant_researcher.py first, then run this to approve.
+NOTE: This example requires interactive input and is not suitable
+for automated test harnesses.
 
 Prerequisites:
-    - MACAW LocalAgent running
-    - Identity provider configured (Keycloak/Auth0)
-    - Bob user with "admin" role in IDP
-    - Researcher script already waiting for approval
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Identity Provider configured (Console -> Settings -> Identity Bridge)
+    - Test users: alice/Alice123!, bob/Bob@123! (bob needs admin role)
+    - Researcher script already waiting (1b_grant_researcher.py running)
 
-Run with:
+Run:
+    # Terminal 1: Run researcher request first
+    python 1b_grant_researcher.py
+
+    # Terminal 2: Run admin approval
     python 1b_grant_admin.py
 """
 
@@ -147,4 +152,19 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    import sys
+    try:
+        sys.exit(main())
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "Local provider does not support" in err:
+            print("ERROR: Identity Provider not configured")
+            print("Fix: Console -> Settings -> Identity Bridge")
+        elif "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure LocalAgent is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

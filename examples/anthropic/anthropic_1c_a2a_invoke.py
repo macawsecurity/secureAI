@@ -1,19 +1,26 @@
 #!/usr/bin/env python3
 """
-Example 1c: A2A with invoke_tool (Anthropic)
+anthropic_1c_a2a_invoke.py - Agent-to-Agent invocation with invoke_tool
 
-Use this when: Building agent systems, need explicit control,
-cross-service communication, or custom routing logic.
+Demonstrates explicit tool invocation for agent systems and cross-service calls.
+Use when you need fine-grained control over routing and tool invocation.
 
 Prerequisites:
-    - Identity provider setup (see setup/README.md)
-    - Policies loaded for alice (see policies/)
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - ANTHROPIC_API_KEY environment variable
+    - Identity Provider configured (Console -> Settings -> Identity Bridge)
+    - Test users: alice/Alice123!
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python anthropic_1c_a2a_invoke.py
+Run:
+    export ANTHROPIC_API_KEY=sk-ant-...
+    python anthropic_1c_a2a_invoke.py
+
+No IdP configured? Run simpler example first:
+    python anthropic_1a_dropin_simple.py
 """
 
 import os
+import sys
 
 from macaw_adapters.anthropic import SecureAnthropic
 from macaw_client import MACAWClient, RemoteIdentityProvider
@@ -130,4 +137,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "ANTHROPIC_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: Anthropic API key not configured")
+            print("Fix: export ANTHROPIC_API_KEY=sk-ant-...")
+        elif "Local provider does not support" in err:
+            print("ERROR: Identity Provider not configured")
+            print("Fix: Console -> Settings -> Identity Bridge")
+            print("\nOr run simpler example first:")
+            print("  python anthropic_1a_dropin_simple.py")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

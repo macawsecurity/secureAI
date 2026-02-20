@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1a: External Attestation - Trade Request (Alice)
+1a_trade_alice.py - External Attestation Trade Request
 
 Alice wants to execute a high-value trade ($15,000).
 Policy requires manager approval via external attestation for amounts > $10,000.
@@ -10,16 +10,20 @@ This demonstrates:
 - Blocking flow: request waits for approval
 - Role-based approval: only users with role:manager can approve
 
-Run this first, then run 1a_trade_bob.py in another terminal to approve.
+NOTE: This example requires interactive approval and is not suitable
+for automated test harnesses.
 
 Prerequisites:
-    - MACAW LocalAgent running
-    - Identity provider configured (Keycloak/Auth0)
-    - Users alice and bob created in IDP
-    - Bob has "manager" role
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Identity Provider configured (Console -> Settings -> Identity Bridge)
+    - Test users: alice/Alice123!, bob/Bob@123! (bob needs manager role)
 
-Run with:
+Run:
+    # Terminal 1: Run Alice's trade request (will block waiting)
     python 1a_trade_alice.py
+
+    # Terminal 2: Run Bob's approval
+    python 1a_trade_bob.py
 """
 
 import json
@@ -193,4 +197,19 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    import sys
+    try:
+        sys.exit(main())
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "Local provider does not support" in err:
+            print("ERROR: Identity Provider not configured")
+            print("Fix: Console -> Settings -> Identity Bridge")
+        elif "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure LocalAgent is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1b: Multi-user Agents (LangChain)
+langchain_1b_multiuser.py - Multi-user Agents with role-based policies
 
 Create different agent instances per user role, each with their own security policy.
 Use this when: Different users need different tool access levels.
@@ -10,8 +10,13 @@ In this example:
 - bob (Manager): Can use calculator and weather
 - carol (Admin): Can use all tools including admin
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python langchain_1b_multiuser.py
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - OPENAI_API_KEY environment variable (for ChatOpenAI)
+
+Run:
+    export OPENAI_API_KEY=sk-...
+    python langchain_1b_multiuser.py
 """
 
 import os
@@ -242,4 +247,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "OPENAI_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: OpenAI API key not configured")
+            print("Fix: export OPENAI_API_KEY=sk-...")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        import sys
+        sys.exit(1)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1b: Discovery and Resources
+1b_discovery_and_resources.py - MCP Discovery and Resources
 
 Demonstrates:
 - list_tools() - discover available tools
@@ -10,7 +10,16 @@ Demonstrates:
 - get_prompt() - get a prompt template
 - Filtering by server name
 
-Run securemcp_calculator.py first, then run this.
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Calculator server running (securemcp_calculator.py)
+
+Run:
+    # Terminal 1: Start the server
+    python securemcp_calculator.py
+
+    # Terminal 2: Run this client
+    python 1b_discovery_and_resources.py
 """
 
 import asyncio
@@ -118,4 +127,16 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 50)
+        if "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure MACAW is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 50)
+        import sys
+        sys.exit(1)

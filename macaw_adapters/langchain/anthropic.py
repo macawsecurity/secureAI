@@ -8,23 +8,30 @@ Usage:
     # Same API, MACAW security is invisible
     llm = ChatAnthropic(model="claude-3-opus-20240229")
     response = llm.invoke("Hello, world!")
+
+Security:
+    This adapter uses SecureAnthropic internally, which routes all LLM calls through
+    MACAW's Policy Enforcement Point (PEP) via invoke_tool. This ensures:
+    - Policy enforcement on every LLM call
+    - Cryptographic audit logging
+    - Per-user identity propagation via bind_to_user
 """
 
 import logging
 from typing import Any, Dict, Iterator, List, Optional
 
-from macaw_client import MACAWClient
-from ._utils import get_or_create_client, cleanup_client
-
 logger = logging.getLogger(__name__)
+
+# Global registry of ChatAnthropic instances for cleanup
+_instances: List['ChatAnthropic'] = []
 
 
 class ChatAnthropic:
     """
     Drop-in replacement for langchain_anthropic.ChatAnthropic with MACAW protection.
 
-    This class wraps the original ChatAnthropic and routes all LLM calls through
-    MACAWClient for policy enforcement, audit logging, and security.
+    Uses SecureAnthropic internally to route all LLM calls through MACAW's PEP.
+    This ensures policy enforcement, not just logging.
 
     MACAW is completely invisible - use exactly like native LangChain.
     """
@@ -38,7 +45,6 @@ class ChatAnthropic:
         base_url: Optional[str] = None,
         timeout: Optional[float] = None,
         max_retries: int = 2,
-        macaw_client: Optional[MACAWClient] = None,
         **kwargs
     ):
         """
@@ -52,71 +58,137 @@ class ChatAnthropic:
             base_url: Custom API base URL
             timeout: Request timeout in seconds
             max_retries: Maximum retry attempts
-            macaw_client: Optional pre-configured MACAWClient
-            **kwargs: Additional arguments passed to underlying ChatAnthropic
+            **kwargs: Additional arguments
         """
         # Store configuration
         self.model_name = model
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.api_key = api_key
-        self.base_url = base_url
-        self.timeout = timeout
-        self.max_retries = max_retries
         self._kwargs = kwargs
 
-        # Initialize MACAW client
-        self._macaw = macaw_client or get_or_create_client("langchain-anthropic")
+        # Store optional config for reference (not passed to SecureAnthropic)
+        self._base_url = base_url
+        self._timeout = timeout
+        self._max_retries = max_retries
 
-        # Lazy-load the actual langchain_anthropic.ChatAnthropic
-        self._llm = None
+        # Create SecureAnthropic internally - it handles its own MACAWClient
+        # SecureAnthropic accepts: api_key, app_name, intent_policy
+        from macaw_adapters.anthropic import SecureAnthropic
 
-    def _get_llm(self):
-        """Lazy-load the underlying ChatAnthropic instance."""
-        if self._llm is None:
-            try:
-                from langchain_anthropic import ChatAnthropic as _ChatAnthropic
+        self._secure_anthropic = SecureAnthropic(
+            app_name="langchain-anthropic",
+            api_key=api_key
+        )
 
-                # Build kwargs, only including non-None values
-                # langchain_anthropic doesn't accept api_key=None
-                llm_kwargs = {
-                    "model": self.model_name,
-                    "temperature": self.temperature,
-                    "max_tokens": self.max_tokens,
-                    "max_retries": self.max_retries,
-                    **self._kwargs
-                }
-                if self.api_key is not None:
-                    llm_kwargs["api_key"] = self.api_key
-                if self.base_url is not None:
-                    llm_kwargs["base_url"] = self.base_url
-                if self.timeout is not None:
-                    llm_kwargs["timeout"] = self.timeout
+        # Track for cleanup
+        _instances.append(self)
 
-                self._llm = _ChatAnthropic(**llm_kwargs)
-            except ImportError:
-                raise ImportError(
-                    "langchain_anthropic is required. Install with: pip install langchain-anthropic"
-                )
-        return self._llm
+        logger.debug(f"[ChatAnthropic] Created with SecureAnthropic backend, model={model}")
 
-    def _format_input(self, input_data: Any) -> str:
-        """Convert various input formats to string for MACAW."""
+    def _to_anthropic_messages(self, input_data: Any) -> List[Dict[str, str]]:
+        """Convert LangChain input to Anthropic message format."""
         if isinstance(input_data, str):
-            return input_data
-        elif isinstance(input_data, list):
-            # List of messages
-            parts = []
+            return [{"role": "user", "content": input_data}]
+
+        if isinstance(input_data, list):
+            messages = []
             for msg in input_data:
-                if hasattr(msg, 'content'):
-                    parts.append(str(msg.content))
+                if hasattr(msg, 'type') and hasattr(msg, 'content'):
+                    # LangChain message object (HumanMessage, AIMessage, etc.)
+                    # Anthropic uses "user" and "assistant" roles
+                    role_map = {
+                        "human": "user",
+                        "ai": "assistant",
+                        "system": "user",  # Anthropic handles system via system param
+                        "function": "user",
+                        "tool": "user"
+                    }
+                    role = role_map.get(msg.type, "user")
+                    messages.append({"role": role, "content": str(msg.content)})
                 elif isinstance(msg, dict):
-                    parts.append(str(msg.get('content', msg)))
+                    # Already in dict format
+                    messages.append(msg)
                 else:
-                    parts.append(str(msg))
-            return "\n".join(parts)
-        else:
-            return str(input_data)
+                    # Fallback: treat as user message
+                    messages.append({"role": "user", "content": str(msg)})
+            return messages
+
+        # Fallback: single user message
+        return [{"role": "user", "content": str(input_data)}]
+
+    def _extract_system_message(self, input_data: Any) -> Optional[str]:
+        """Extract system message from input if present."""
+        if isinstance(input_data, list):
+            for msg in input_data:
+                if hasattr(msg, 'type') and msg.type == "system":
+                    return str(msg.content)
+        return None
+
+    def _to_langchain_message(self, anthropic_response: Any) -> Any:
+        """Convert Anthropic Message to LangChain AIMessage."""
+        try:
+            from langchain_core.messages import AIMessage
+
+            # Handle dict response
+            if isinstance(anthropic_response, dict):
+                content_blocks = anthropic_response.get("content", [])
+                if content_blocks:
+                    # Concatenate text blocks
+                    text_parts = []
+                    for block in content_blocks:
+                        if isinstance(block, dict) and block.get("type") == "text":
+                            text_parts.append(block.get("text", ""))
+                        elif isinstance(block, str):
+                            text_parts.append(block)
+                    return AIMessage(content="".join(text_parts))
+                return AIMessage(content="")
+
+            # Handle Message object
+            if hasattr(anthropic_response, 'content'):
+                content = anthropic_response.content
+                if isinstance(content, list):
+                    # Content blocks
+                    text_parts = []
+                    for block in content:
+                        if hasattr(block, 'text'):
+                            text_parts.append(block.text)
+                        elif hasattr(block, 'type') and block.type == "text":
+                            text_parts.append(getattr(block, 'text', ''))
+                    return AIMessage(content="".join(text_parts))
+                return AIMessage(content=str(content))
+
+            return AIMessage(content=str(anthropic_response))
+
+        except ImportError:
+            logger.warning("langchain_core not installed, returning raw response")
+            return anthropic_response
+
+    def _to_langchain_chunk(self, anthropic_event: Any) -> Any:
+        """Convert Anthropic streaming event to LangChain AIMessageChunk."""
+        try:
+            from langchain_core.messages import AIMessageChunk
+
+            # Handle different event types from Anthropic streaming
+            if hasattr(anthropic_event, 'type'):
+                if anthropic_event.type == "content_block_delta":
+                    delta = getattr(anthropic_event, 'delta', None)
+                    if delta and hasattr(delta, 'text'):
+                        return AIMessageChunk(content=delta.text)
+                elif anthropic_event.type == "text":
+                    return AIMessageChunk(content=getattr(anthropic_event, 'text', ''))
+
+            # Handle dict event
+            if isinstance(anthropic_event, dict):
+                if anthropic_event.get("type") == "content_block_delta":
+                    delta = anthropic_event.get("delta", {})
+                    return AIMessageChunk(content=delta.get("text", ""))
+                elif "text" in anthropic_event:
+                    return AIMessageChunk(content=anthropic_event["text"])
+
+            return AIMessageChunk(content="")
+
+        except ImportError:
+            return anthropic_event
 
     def invoke(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Any:
         """
@@ -128,29 +200,35 @@ class ChatAnthropic:
             **kwargs: Additional arguments
 
         Returns:
-            LLM response (AIMessage or similar)
+            LLM response (AIMessage)
         """
-        llm = self._get_llm()
+        # Convert to Anthropic format
+        messages = self._to_anthropic_messages(input)
+        system_msg = self._extract_system_message(input)
 
-        # Route through MACAW for policy/audit
-        if self._macaw:
-            prompt_str = self._format_input(input)
-            logger.debug(f"[SecureChatAnthropic] Routing invoke through MACAW")
+        # Filter out system messages from messages list (handled separately)
+        if system_msg:
+            messages = [m for m in messages if m.get("role") != "user" or m.get("content") != system_msg]
 
-            # Log the invocation through MACAW
-            self._macaw.log_event(
-                event_type="llm_invoke",
-                action="invoke",
-                target=f"anthropic:{self.model_name}",
-                metadata={
-                    "model": self.model_name,
-                    "prompt_length": len(prompt_str),
-                    "temperature": self.temperature
-                }
-            )
+        # Build params
+        params = {
+            "model": self.model_name,
+            "messages": messages,
+            "max_tokens": self.max_tokens,
+        }
+        if self.temperature is not None:
+            params["temperature"] = self.temperature
+        if system_msg:
+            params["system"] = system_msg
 
-        # Call underlying LLM
-        return llm.invoke(input, config=config, **kwargs)
+        # Merge additional kwargs
+        params.update(kwargs)
+
+        # Call SecureAnthropic (routes through PEP!)
+        response = self._secure_anthropic.messages.create(**params)
+
+        # Convert to LangChain format
+        return self._to_langchain_message(response)
 
     def stream(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Iterator:
         """
@@ -162,27 +240,34 @@ class ChatAnthropic:
             **kwargs: Additional arguments
 
         Yields:
-            Streaming chunks from the LLM
+            Streaming chunks (AIMessageChunk)
         """
-        llm = self._get_llm()
+        # Convert to Anthropic format
+        messages = self._to_anthropic_messages(input)
+        system_msg = self._extract_system_message(input)
 
-        # Route through MACAW for policy/audit
-        if self._macaw:
-            prompt_str = self._format_input(input)
-            logger.debug(f"[SecureChatAnthropic] Routing stream through MACAW")
+        if system_msg:
+            messages = [m for m in messages if m.get("role") != "user" or m.get("content") != system_msg]
 
-            self._macaw.log_event(
-                event_type="llm_stream",
-                action="stream",
-                target=f"anthropic:{self.model_name}",
-                metadata={
-                    "model": self.model_name,
-                    "prompt_length": len(prompt_str)
-                }
-            )
+        # Build params
+        params = {
+            "model": self.model_name,
+            "messages": messages,
+            "max_tokens": self.max_tokens,
+        }
+        if self.temperature is not None:
+            params["temperature"] = self.temperature
+        if system_msg:
+            params["system"] = system_msg
 
-        # Stream from underlying LLM
-        yield from llm.stream(input, config=config, **kwargs)
+        params.update(kwargs)
+
+        # Stream from SecureAnthropic (routes through PEP!)
+        with self._secure_anthropic.messages.stream(**params) as stream:
+            for event in stream:
+                chunk = self._to_langchain_chunk(event)
+                if chunk:
+                    yield chunk
 
     def batch(self, inputs: List[Any], config: Optional[Dict] = None, **kwargs) -> List:
         """
@@ -194,69 +279,37 @@ class ChatAnthropic:
             **kwargs: Additional arguments
 
         Returns:
-            List of LLM responses
+            List of LLM responses (AIMessage)
         """
-        llm = self._get_llm()
-
-        # Route through MACAW for policy/audit
-        if self._macaw:
-            logger.debug(f"[SecureChatAnthropic] Routing batch ({len(inputs)} items) through MACAW")
-
-            self._macaw.log_event(
-                event_type="llm_batch",
-                action="batch",
-                target=f"anthropic:{self.model_name}",
-                metadata={
-                    "model": self.model_name,
-                    "batch_size": len(inputs)
-                }
-            )
-
-        return llm.batch(inputs, config=config, **kwargs)
+        return [self.invoke(input, config=config, **kwargs) for input in inputs]
 
     async def ainvoke(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Any:
         """Async invoke with MACAW protection."""
-        llm = self._get_llm()
-
-        if self._macaw:
-            prompt_str = self._format_input(input)
-            self._macaw.log_event(
-                event_type="llm_ainvoke",
-                action="ainvoke",
-                target=f"anthropic:{self.model_name}",
-                metadata={"model": self.model_name, "prompt_length": len(prompt_str)}
-            )
-
-        return await llm.ainvoke(input, config=config, **kwargs)
+        return self.invoke(input, config=config, **kwargs)
 
     async def astream(self, input: Any, config: Optional[Dict] = None, **kwargs):
         """Async stream with MACAW protection."""
-        llm = self._get_llm()
-
-        if self._macaw:
-            self._macaw.log_event(
-                event_type="llm_astream",
-                action="astream",
-                target=f"anthropic:{self.model_name}",
-                metadata={"model": self.model_name}
-            )
-
-        async for chunk in llm.astream(input, config=config, **kwargs):
+        for chunk in self.stream(input, config=config, **kwargs):
             yield chunk
 
     async def abatch(self, inputs: List[Any], config: Optional[Dict] = None, **kwargs) -> List:
         """Async batch with MACAW protection."""
-        llm = self._get_llm()
+        return self.batch(inputs, config=config, **kwargs)
 
-        if self._macaw:
-            self._macaw.log_event(
-                event_type="llm_abatch",
-                action="abatch",
-                target=f"anthropic:{self.model_name}",
-                metadata={"model": self.model_name, "batch_size": len(inputs)}
-            )
+    def bind_to_user(self, user_client: 'MACAWClient') -> 'BoundChatAnthropic':
+        """
+        Bind this LLM to a specific user's identity.
 
-        return await llm.abatch(inputs, config=config, **kwargs)
+        Returns a BoundChatAnthropic that routes all calls through the user's
+        MACAWClient for per-user policy enforcement.
+
+        Args:
+            user_client: MACAWClient with user identity (from RemoteIdentityProvider)
+
+        Returns:
+            BoundChatAnthropic instance
+        """
+        return BoundChatAnthropic(self, user_client)
 
     # Pass-through properties to match LangChain interface
     @property
@@ -264,23 +317,138 @@ class ChatAnthropic:
         return self.model_name
 
     def bind(self, **kwargs):
-        """Bind arguments to the LLM."""
-        llm = self._get_llm()
-        return llm.bind(**kwargs)
+        """Bind arguments to the LLM (LangChain compatibility)."""
+        new_kwargs = {**self._kwargs, **kwargs}
+        return ChatAnthropic(
+            model=self.model_name,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            **new_kwargs
+        )
 
     def with_config(self, config: Dict):
-        """Return a new instance with config."""
-        llm = self._get_llm()
-        return llm.with_config(config)
+        """Return self with config (LangChain compatibility)."""
+        return self
 
-    def __getattr__(self, name: str) -> Any:
-        """Delegate unknown attributes to underlying LLM."""
-        if name.startswith('_'):
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-        llm = self._get_llm()
-        return getattr(llm, name)
+    def cleanup(self):
+        """Clean up resources."""
+        if hasattr(self, '_secure_anthropic') and self._secure_anthropic:
+            try:
+                self._secure_anthropic.cleanup()
+            except Exception as e:
+                logger.debug(f"Cleanup error (may be expected): {e}")
+
+
+class BoundChatAnthropic:
+    """
+    Per-user wrapper for ChatAnthropic.
+
+    Created via ChatAnthropic.bind_to_user(user_client).
+    Routes all calls through the user's identity for per-user policy enforcement.
+    """
+
+    def __init__(self, parent: ChatAnthropic, user_client: 'MACAWClient'):
+        self._parent = parent
+        self._user_client = user_client
+
+        # Get bound SecureAnthropic for this user
+        self._bound_anthropic = parent._secure_anthropic.bind_to_user(user_client)
+
+    def _to_anthropic_messages(self, input_data: Any) -> List[Dict[str, str]]:
+        return self._parent._to_anthropic_messages(input_data)
+
+    def _extract_system_message(self, input_data: Any) -> Optional[str]:
+        return self._parent._extract_system_message(input_data)
+
+    def _to_langchain_message(self, anthropic_response: Any) -> Any:
+        return self._parent._to_langchain_message(anthropic_response)
+
+    def _to_langchain_chunk(self, anthropic_event: Any) -> Any:
+        return self._parent._to_langchain_chunk(anthropic_event)
+
+    def invoke(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Any:
+        """Invoke with user identity."""
+        messages = self._to_anthropic_messages(input)
+        system_msg = self._extract_system_message(input)
+
+        if system_msg:
+            messages = [m for m in messages if m.get("role") != "user" or m.get("content") != system_msg]
+
+        params = {
+            "model": self._parent.model_name,
+            "messages": messages,
+            "max_tokens": self._parent.max_tokens,
+        }
+        if self._parent.temperature is not None:
+            params["temperature"] = self._parent.temperature
+        if system_msg:
+            params["system"] = system_msg
+        params.update(kwargs)
+
+        # Call through bound SecureAnthropic (user identity!)
+        response = self._bound_anthropic.messages.create(**params)
+        return self._to_langchain_message(response)
+
+    def stream(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Iterator:
+        """Stream with user identity."""
+        messages = self._to_anthropic_messages(input)
+        system_msg = self._extract_system_message(input)
+
+        if system_msg:
+            messages = [m for m in messages if m.get("role") != "user" or m.get("content") != system_msg]
+
+        params = {
+            "model": self._parent.model_name,
+            "messages": messages,
+            "max_tokens": self._parent.max_tokens,
+        }
+        if self._parent.temperature is not None:
+            params["temperature"] = self._parent.temperature
+        if system_msg:
+            params["system"] = system_msg
+        params.update(kwargs)
+
+        with self._bound_anthropic.messages.stream(**params) as stream:
+            for event in stream:
+                chunk = self._to_langchain_chunk(event)
+                if chunk:
+                    yield chunk
+
+    def batch(self, inputs: List[Any], config: Optional[Dict] = None, **kwargs) -> List:
+        """Batch with user identity."""
+        return [self.invoke(input, config=config, **kwargs) for input in inputs]
+
+    async def ainvoke(self, input: Any, config: Optional[Dict] = None, **kwargs) -> Any:
+        """Async invoke with user identity."""
+        return self.invoke(input, config=config, **kwargs)
+
+    async def astream(self, input: Any, config: Optional[Dict] = None, **kwargs):
+        """Async stream with user identity."""
+        for chunk in self.stream(input, config=config, **kwargs):
+            yield chunk
+
+    async def abatch(self, inputs: List[Any], config: Optional[Dict] = None, **kwargs) -> List:
+        """Async batch with user identity."""
+        return self.batch(inputs, config=config, **kwargs)
+
+    @property
+    def model(self) -> str:
+        return self._parent.model_name
+
+    @property
+    def model_name(self) -> str:
+        return self._parent.model_name
+
+    @property
+    def temperature(self) -> float:
+        return self._parent.temperature
 
 
 def cleanup():
-    """Clean up the langchain-anthropic MACAW client."""
-    cleanup_client("langchain-anthropic")
+    """Clean up all ChatAnthropic instances."""
+    for instance in _instances:
+        try:
+            instance.cleanup()
+        except Exception as e:
+            logger.debug(f"Cleanup error: {e}")
+    _instances.clear()

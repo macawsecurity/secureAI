@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 """
-Example 1a: Drop-in Replacement (OpenAI)
+openai_1a_dropin_simple.py - Drop-in replacement for OpenAI client
 
-The simplest path - just replace your import and it works.
-Use this when: Single app, no user distinction, app-level policies.
+The simplest integration path - just replace your import and it works.
+No Identity Provider needed.
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python openai_1a_dropin_simple.py
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - OPENAI_API_KEY environment variable
+
+Run:
+    export OPENAI_API_KEY=sk-...
+    python openai_1a_dropin_simple.py
 """
 
 import os
+import sys
 
 # BEFORE: from openai import OpenAI
 # AFTER:
@@ -82,4 +88,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "OPENAI_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: OpenAI API key not configured")
+            print("Fix: export OPENAI_API_KEY=sk-...")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

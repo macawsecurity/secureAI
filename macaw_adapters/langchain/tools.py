@@ -110,3 +110,50 @@ def wrap_tools(tools: List[Any], macaw_client: MACAWClient) -> List[SecureToolWr
         List of SecureToolWrapper instances
     """
     return [SecureToolWrapper(tool, macaw_client) for tool in tools]
+
+
+def secure_tool(func=None, *, macaw_client: Optional[MACAWClient] = None):
+    """
+    Decorator to create a secure LangChain tool with MACAW protection.
+
+    Usage:
+        @secure_tool
+        def search_database(query: str) -> str:
+            '''Search the database for relevant information.'''
+            return database.search(query)
+
+        # Or with explicit client:
+        @secure_tool(macaw_client=my_client)
+        def my_tool(x: str) -> str:
+            '''My tool description.'''
+            return process(x)
+
+    Args:
+        func: The function to wrap (used when called without parentheses)
+        macaw_client: Optional MACAWClient for policy enforcement
+
+    Returns:
+        A SecureToolWrapper compatible with LangChain agents
+    """
+    from langchain_core.tools import tool as langchain_tool
+    from ._utils import get_or_create_client
+
+    def decorator(fn):
+        # Create LangChain tool from function
+        lc_tool = langchain_tool(fn)
+
+        # Get or create MACAW client
+        client = macaw_client or get_or_create_client("langchain-tools")
+        if client is None:
+            logger.warning("Could not create MACAWClient, returning unwrapped tool")
+            return lc_tool
+
+        # Wrap with MACAW security
+        return SecureToolWrapper(lc_tool, client)
+
+    if func is not None:
+        # Called without parentheses: @secure_tool
+        return decorator(func)
+    else:
+        # Called with parentheses: @secure_tool() or @secure_tool(macaw_client=...)
+        return decorator

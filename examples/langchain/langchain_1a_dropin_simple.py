@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 """
-Example 1a: Drop-in Replacement (LangChain)
+langchain_1a_dropin_simple.py - Drop-in replacement for LangChain agents
 
-The simplest path - replace your LangChain imports and add a security_policy.
-Use this when: Single app, need tool access control, app-level policies.
+The simplest integration path - replace your LangChain imports and add policy.
+No Identity Provider needed.
 
-Run with:
-    PYTHONPATH=/path/to/secureAI python langchain_1a_dropin_simple.py
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - OPENAI_API_KEY environment variable (for ChatOpenAI)
+
+Run:
+    export OPENAI_API_KEY=sk-...
+    python langchain_1a_dropin_simple.py
 """
 
 import os
+import sys
 
 # BEFORE: from langchain.agents import create_react_agent, AgentExecutor
 # AFTER:
@@ -179,4 +185,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "OPENAI_API_KEY" in err or "api_key" in err.lower():
+            print("ERROR: OpenAI API key not configured")
+            print("Fix: export OPENAI_API_KEY=sk-...")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

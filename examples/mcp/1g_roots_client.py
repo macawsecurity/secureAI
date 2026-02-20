@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1g: MCP Roots via MAPL - CLIENT
+1g_roots_client.py - MCP Roots via MAPL (Filesystem Boundaries)
 
 Tests root boundaries declared by the server.
 
@@ -9,7 +9,16 @@ Demonstrates:
 - Access allowed within roots
 - Access denied outside roots
 
-Run 1g_roots_server.py first, then run this client.
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Roots server running (1g_roots_server.py)
+
+Run:
+    # Terminal 1: Start the server
+    python 1g_roots_server.py
+
+    # Terminal 2: Run this client
+    python 1g_roots_client.py
 """
 
 import asyncio
@@ -98,4 +107,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 50)
+        if "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure MACAW is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 50)
+        import sys
+        sys.exit(1)

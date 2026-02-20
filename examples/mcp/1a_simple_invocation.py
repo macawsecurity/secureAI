@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1a: Simple Tool Invocation
+1a_simple_invocation.py - Simple MCP Tool Invocation
 
 Demonstrates:
 - Auto-discovering SecureMCP servers
@@ -8,7 +8,16 @@ Demonstrates:
 - Basic tool calls (add, subtract, multiply, divide)
 - Tool with context (calculate with history)
 
-Run securemcp_calculator.py first, then run this.
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Calculator server running (securemcp_calculator.py)
+
+Run:
+    # Terminal 1: Start the server
+    python securemcp_calculator.py
+
+    # Terminal 2: Run this client
+    python 1a_simple_invocation.py
 """
 
 from macaw_adapters.mcp import Client
@@ -91,4 +100,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 50)
+        if "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure MACAW is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 50)
+        import sys
+        sys.exit(1)

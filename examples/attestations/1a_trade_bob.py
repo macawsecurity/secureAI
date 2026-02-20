@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1a: External Attestation - Manager Approval (Bob)
+1a_trade_bob.py - External Attestation Manager Approval
 
 Bob reviews and approves/denies pending attestation requests.
 Alice's trade request is BLOCKING, waiting for Bob's approval.
@@ -10,15 +10,20 @@ This demonstrates:
 - approve_attestation(): Grant the request
 - deny_attestation(): Reject the request with reason
 
-Run 1a_trade_alice.py first, then run this to approve.
+NOTE: This example requires interactive input and is not suitable
+for automated test harnesses.
 
 Prerequisites:
-    - MACAW LocalAgent running
-    - Identity provider configured (Keycloak/Auth0)
-    - Bob user with "manager" role in IDP
-    - Alice has already requested a trade (pending attestation exists)
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Identity Provider configured (Console -> Settings -> Identity Bridge)
+    - Test users: alice/Alice123!, bob/Bob@123! (bob needs manager role)
+    - Alice has already requested a trade (1a_trade_alice.py running)
 
-Run with:
+Run:
+    # Terminal 1: Run Alice's trade request first
+    python 1a_trade_alice.py
+
+    # Terminal 2: Run Bob's approval
     python 1a_trade_bob.py
 """
 
@@ -141,4 +146,19 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    import sys
+    try:
+        sys.exit(main())
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 60)
+        if "Local provider does not support" in err:
+            print("ERROR: Identity Provider not configured")
+            print("Fix: Console -> Settings -> Identity Bridge")
+        elif "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure LocalAgent is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 60)
+        sys.exit(1)

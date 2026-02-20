@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 1e: MCP Sampling - CLIENT
+1e_sampling_client.py - MCP Sampling (Server->Client LLM)
 
 Demonstrates client.set_sampling_handler() for server->client LLM requests.
 
@@ -8,7 +8,18 @@ The client registers an LLM handler that the server's ctx.sample() calls.
 Set ANTHROPIC_API_KEY environment variable to use real Claude API,
 otherwise falls back to mock responses.
 
-Run 1e_sampling_server.py first, then run this client.
+Prerequisites:
+    - MACAW SDK installed (pip install macaw-client macaw-adapters)
+    - Sampling server running (1e_sampling_server.py)
+    - ANTHROPIC_API_KEY environment variable (optional, for real Claude)
+
+Run:
+    # Terminal 1: Start the server
+    python 1e_sampling_server.py
+
+    # Terminal 2: Run this client (with optional API key)
+    export ANTHROPIC_API_KEY=sk-ant-...  # Optional
+    python 1e_sampling_client.py
 """
 
 import os
@@ -119,4 +130,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        err = str(e)
+        print("\n" + "=" * 50)
+        if "Connection refused" in err or "connect" in err.lower():
+            print("ERROR: Cannot connect to MACAW")
+            print("Fix: Ensure MACAW is running")
+        else:
+            print(f"ERROR: {e}")
+        print("=" * 50)
+        import sys
+        sys.exit(1)
