@@ -2,13 +2,17 @@
 MACAW Adapters - Secure AI Adapters for Enterprise
 
 Security adapters for popular AI frameworks including OpenAI, Anthropic,
-LangChain, and MCP (Model Context Protocol).
+LangChain, LiteLLM (100+ providers), and MCP (Model Context Protocol).
 
 Usage:
     from macaw_adapters.openai import SecureOpenAI
     from macaw_adapters.anthropic import SecureAnthropic
     from macaw_adapters.langchain.agents import create_react_agent, AgentExecutor
     from macaw_adapters.mcp import SecureMCP
+
+    # LiteLLM - drop-in replacement supporting 100+ providers
+    from macaw_adapters import litellm
+    response = litellm.completion(model="groq/llama3-70b", messages=[...])
 
 Prerequisites:
     - MACAW Client Library: Download from https://macawsecurity.ai
@@ -17,7 +21,7 @@ Prerequisites:
 For more information, visit: https://macawsecurity.ai
 """
 
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 __author__ = "MACAW Security"
 __license__ = "Apache-2.0"
 
@@ -29,6 +33,7 @@ __all__ = [
     "openai",
     "anthropic",
     "langchain",
+    "litellm",
     "mcp",
     "__version__",
 ]
@@ -45,6 +50,9 @@ def __getattr__(name):
     elif name == "langchain":
         from macaw_adapters import langchain
         return langchain
+    elif name == "litellm":
+        from macaw_adapters import litellm
+        return litellm
     elif name == "mcp":
         from macaw_adapters import mcp
         return mcp

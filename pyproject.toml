@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "macaw-adapters"
-version = "0.8.0"
-description = "Secure AI Adapters for OpenAI, Claude, LangChain, and MCP"
+version = "0.8.1"
+description = "Secure AI Adapters for OpenAI, Claude, LangChain, LiteLLM (100+ providers), and MCP"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
     {name = "MACAW Security", email = "support@macawsecurity.com"}
 ]
-keywords = ["ai", "security", "openai", "claude", "langchain", "mcp", "macaw"]
+keywords = ["ai", "security", "openai", "claude", "langchain", "litellm", "mcp", "macaw"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -39,12 +39,14 @@ langchain = [
     "langchain-anthropic>=0.1.0",
 ]
 mcp = []
+litellm = ["litellm>=1.0.0"]
 all = [
     "openai>=1.0.0",
     "anthropic>=0.18.0",
     "langchain>=0.1.0",
     "langchain-openai>=0.0.5",
     "langchain-anthropic>=0.1.0",
+    "litellm>=1.0.0",
 ]
 dev = [
     "pytest>=7.0.0",
