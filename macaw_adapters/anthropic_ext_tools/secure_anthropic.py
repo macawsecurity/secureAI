@@ -10,6 +10,12 @@ Supports three usage paths:
 2. bind_to_user: service.bind_to_user(user_client) - per-user identity for SaaS
 3. invoke_tool: user.invoke_tool("tool:xxx/generate", ...) - explicit A2A control
 
+Architecture (service mode):
+- macaw_client: Primary client owning LLM operations (tool:{app_name}/generate, etc.)
+- _tools_client: Internal client owning user-registered tools (tool:{app_name}-tools/*, not externally reachable)
+- server_id: Points to macaw_client (the primary interface)
+- Tool isolation: Only macaw_client can invoke tools on _tools_client
+
 Install with: pip install -e /path/to/secureAI
 """
 
@@ -72,8 +78,15 @@ class SecureAnthropic:
     """
     Drop-in replacement for Anthropic Claude client with MACAW security.
 
+    This version uses a two-client architecture for tool isolation:
+    - macaw_client: Primary, owns LLM operations (tool:{app_name}/generate, etc.)
+    - _tools_client: Internal, owns user-registered tools (not externally reachable)
+
+    server_id points to macaw_client, making it the primary external interface.
+    Tools are isolated: only macaw_client can invoke tools on _tools_client.
+
     Supports two modes:
-    1. Service mode (default): Creates service agent, registers tools, handles Claude calls
+    1. Service mode (default): Creates both clients, handles Claude calls
     2. User mode (jwt_token provided): Creates user agent with identity for direct calls
 
     For multi-user scenarios, use service mode + bind_to_user() to create per-user wrappers.
@@ -125,10 +138,15 @@ class SecureAnthropic:
         self.intent_policy = intent_policy or {}
 
         if self._mode == "service":
-            # SERVICE MODE: Register tools and handle Claude calls
-            # Tools with prompts declaration - MAPL-compliant: tool:<service>/<operation>
-            # Each tool declares which parameters are prompts for automatic authentication
-            self.tools = {
+            # SERVICE MODE: Two-client architecture for tool isolation
+            # - macaw_client: Primary, owns LLM operations (externally reachable)
+            # - _tools_client: Internal, owns user tools (not externally reachable)
+
+            # Tools client name (for trace clarity)
+            self._tools_name = f"{self.app_name}-tools"
+
+            # LLM tools on the primary client
+            llm_tools = {
                 f"tool:{self.app_name}/generate": {
                     "handler": self._handle_generate,
                     "prompts": ["messages"]  # messages param is a prompt
@@ -139,15 +157,25 @@ class SecureAnthropic:
                 }
             }
 
-            # Create MACAWClient with unified tools config
+            # Primary client - owns LLM operations, externally reachable via server_id
             self.macaw_client = MACAWClient(
                 app_name=self.app_name,
                 app_version="1.0.0",
                 intent_policy=self.intent_policy,
-                tools=self.tools  # Unified: {name: {handler, prompts, ...}}
+                tools=llm_tools
+            )
+
+            # Internal tools client - owns user-registered tools, NOT externally reachable
+            self._tools_client = MACAWClient(
+                app_name=self._tools_name,
+                app_version="1.0.0",
+                intent_policy=self.intent_policy,
+                tools={}  # User tools added via register_tool
             )
         else:
             # USER MODE: Create user agent with identity
+            self._tools_name = None
+            self._tools_client = None
             self.tools = {}
 
             self.macaw_client = MACAWClient(
@@ -161,12 +189,24 @@ class SecureAnthropic:
                 }
             )
 
-        # Register with LocalAgent and get server ID
-        if self.macaw_client.register():
-            self.server_id = self.macaw_client.agent_id
-            logger.info(f"SecureAnthropic registered as: {self.server_id} (mode: {self._mode})")
+        # Register with LocalAgent and get server ID(s)
+        if self._mode == "service":
+            # Register both clients
+            if self.macaw_client.register() and self._tools_client.register():
+                self.server_id = self.macaw_client.agent_id  # Primary interface!
+                self._tools_server_id = self._tools_client.agent_id  # Internal, not exposed
+                logger.info(f"SecureAnthropic registered (two-client mode):")
+                logger.info(f"   Primary (LLM): {self.server_id}")
+                logger.info(f"   Internal (tools): {self._tools_server_id}")
+            else:
+                raise RuntimeError("Failed to register with MACAW LocalAgent")
         else:
-            raise RuntimeError("Failed to register with MACAW LocalAgent")
+            # User mode - single client
+            if self.macaw_client.register():
+                self.server_id = self.macaw_client.agent_id
+                logger.info(f"SecureAnthropic registered as: {self.server_id} (mode: {self._mode})")
+            else:
+                raise RuntimeError("Failed to register with MACAW LocalAgent")
 
         # Mimic Anthropic API structure
         # MACAW-protected namespaces (route through PEP)
@@ -242,6 +282,9 @@ class SecureAnthropic:
         """
         Register a tool that Claude can call.
 
+        Tools are registered on _tools_client (internal, not externally reachable).
+        This provides tool isolation - only the LLM can invoke these tools.
+
         Args:
             name: Tool name (must match Claude function name)
             handler: Function to handle tool execution
@@ -249,19 +292,20 @@ class SecureAnthropic:
         Returns:
             Self for chaining
         """
-        # Store with MAPL-compliant name for _handle_generate() lookup
-        mapl_name = f"tool:{self.app_name}/{name}"
+        # Store with MAPL-compliant name using tools client's app_name
+        mapl_name = f"tool:{self._tools_name}/{name}"
 
         # Wrap handler to accept params dict and unpack as kwargs
         def wrapped_handler(params):
             return handler(**params)
 
-        self.user_tools[mapl_name] = wrapped_handler
+        self.user_tools[name] = wrapped_handler  # Store by simple name for lookup
+        self.user_tools[mapl_name] = wrapped_handler  # Also store by MAPL name
 
-        # Update MACAWClient with new tool using MAPL name (for invoke_tool routing)
-        self.macaw_client.register_tool(mapl_name, wrapped_handler)
+        # Register with _tools_client (internal) using MAPL name
+        self._tools_client.register_tool(mapl_name, wrapped_handler)
 
-        logger.info(f"Registered tool: {name}")
+        logger.info(f"Registered tool: {name} -> {mapl_name}")
         return self
 
     def _auto_discover_tools(self, tools_metadata):
@@ -291,37 +335,39 @@ class SecureAnthropic:
         for tool_def in tools_metadata:
             func_name = tool_def.get("name")
 
-            # Use MAPL-compliant name: tool:<app_name>/<func_name>
-            mapl_name = f"tool:{self.app_name}/{func_name}"
-            if func_name and mapl_name not in self.user_tools:
+            # Use MAPL-compliant name with tools client: tool:<app_name>-tools/<func_name>
+            mapl_name = f"tool:{self._tools_name}/{func_name}"
+            if func_name and func_name not in self.user_tools:
                 # Look for function in caller's scope
                 if func_name in search_scope:
                     func = search_scope[func_name]
                     if callable(func):
                         logger.info(f"Auto-discovered tool: {func_name} -> {mapl_name}")
-                        self._discovered_tools[mapl_name] = func
+                        self._discovered_tools[func_name] = func
+                        self.user_tools[func_name] = func
                         self.user_tools[mapl_name] = func
                 else:
                     logger.warning(f"Tool '{func_name}' not found in caller's scope")
 
-        # Sync all discovered tools with MACAW agent using public API
+        # Sync all discovered tools with _tools_client (internal)
         if self._discovered_tools:
-            # Update MACAWClient with all new tools
-            for mapl_name, func in self._discovered_tools.items():
+            # Register each discovered tool with _tools_client
+            for func_name, func in self._discovered_tools.items():
+                mapl_name = f"tool:{self._tools_name}/{func_name}"
                 # Create wrapper handler that accepts dict parameter
                 def create_handler(tool_func):
                     def handler(params):
                         return tool_func(**params)
                     return handler
-                self.macaw_client.register_tool(mapl_name, create_handler(func))
+                self._tools_client.register_tool(mapl_name, create_handler(func))
             self._tools_registered = True
-            logger.info(f"Auto-registered {len(self._discovered_tools)} tools with MACAW")
+            logger.info(f"Auto-registered {len(self._discovered_tools)} tools with _tools_client")
 
     def _handle_generate(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """
         Handle 'generate' tool (messages creation).
 
-        This runs INSIDE ToolAgent, so it's already PEP-protected!
+        This runs on macaw_client. Tool callbacks route to _tools_client (internal).
         Returns a serializable dict for MACAW protocol, or an iterator for streaming.
         """
         try:
@@ -342,25 +388,27 @@ class SecureAnthropic:
                     if content_block.type == 'tool_use':
                         func_name = content_block.name
                         tool_args = content_block.input
-                        # Convert to MAPL-compliant name: tool:<app_name>/<func_name>
-                        mapl_name = f"tool:{self.app_name}/{func_name}"
+                        # Convert to MAPL-compliant name using tools client: tool:<app_name>-tools/<func_name>
+                        mapl_name = f"tool:{self._tools_name}/{func_name}"
                         logger.info(f"Claude requested tool use: {func_name} -> {mapl_name}")
 
-                        # Check if we have this tool (using MAPL name)
-                        if mapl_name not in self.user_tools:
+                        # Check if we have this tool (by simple name or MAPL name)
+                        if func_name not in self.user_tools and mapl_name not in self.user_tools:
                             result = {
                                 'error': f"Tool not found: {mapl_name}",
                                 'available_tools': list(self.user_tools.keys())
                             }
                         else:
                             # Invoke tool through MACAW (goes through PEP!)
+                            # Route from macaw_client to _tools_client (internal)
+                            # This provides tool isolation: only LLM can call tools
                             try:
                                 result = self.macaw_client.invoke_tool(
                                     tool_name=mapl_name,
                                     parameters=tool_args,
-                                    target_agent=self.server_id  # Route to ourselves!
+                                    target_agent=self._tools_server_id  # Internal tools client
                                 )
-                                logger.info(f"Tool {mapl_name} executed successfully")
+                                logger.info(f"Tool {func_name} executed successfully via _tools_client")
                             except Exception as e:
                                 error_msg = str(e)
                                 # Check if MACAW blocked it

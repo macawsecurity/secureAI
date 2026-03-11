@@ -59,6 +59,18 @@ class SecureToolWrapper(BaseTool):
         if hasattr(original_tool, 'return_direct'):
             self.return_direct = original_tool.return_direct
 
+        # Register tool with MAPL-compliant name: tool:<app_name>/<tool_name>
+        app_name = getattr(macaw_client, 'app_name', 'langchain')
+        mapl_name = f"tool:{app_name}/{original_tool.name}"
+
+        def tool_handler(params):
+            """Handler that executes the original tool."""
+            tool_input = params.get("input", "")
+            return original_tool.run(tool_input)
+
+        macaw_client.register_tool(mapl_name, tool_handler)
+        logger.info(f"Registered secure tool: {original_tool.name} -> {mapl_name}")
+
     def _run(
         self,
         tool_input: str = "",
@@ -66,16 +78,19 @@ class SecureToolWrapper(BaseTool):
         **kwargs
     ) -> str:
         """Execute tool through MACAW PEP."""
-        logger.debug(f"[SecureTool] Routing {self.name} through MACAW")
+        # Use MAPL-compliant name: tool:<app_name>/<tool_name>
+        app_name = getattr(self.macaw_client, 'app_name', 'langchain')
+        mapl_name = f"tool:{app_name}/{self.name}"
+        logger.debug(f"[SecureTool] Routing {self.name} -> {mapl_name} through MACAW")
 
         try:
             # Build parameters dict
             parameters = {"input": tool_input}
 
-            # Invoke tool through MACAW protocol
+            # Invoke tool through MACAW protocol with MAPL-compliant name
             # Authenticated prompts are auto-created by invoke_tool() based on registry
             result = self.macaw_client.invoke_tool(
-                tool_name=self.name,
+                tool_name=mapl_name,
                 parameters=parameters,
                 target_agent=self.macaw_client.agent_id
             )
@@ -84,8 +99,8 @@ class SecureToolWrapper(BaseTool):
         except Exception as e:
             error_msg = str(e).lower()
             if any(word in error_msg for word in ['denied', 'blocked', 'policy']):
-                logger.warning(f"MACAW blocked {self.name}: {e}")
-                return f"Access denied by security policy: {self.name}"
+                logger.warning(f"MACAW blocked {mapl_name}: {e}")
+                return f"Access denied by security policy: {mapl_name}"
             raise
 
     async def _arun(

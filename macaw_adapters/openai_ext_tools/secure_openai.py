@@ -10,6 +10,12 @@ Supports three usage paths:
 2. bind_to_user: service.bind_to_user(user_client) - per-user identity for SaaS
 3. invoke_tool: user.invoke_tool("tool:xxx/generate", ...) - explicit A2A control
 
+Architecture (service mode):
+- macaw_client: Primary client owning LLM operations (tool:{app_name}/generate, etc.)
+- _tools_client: Internal client owning user-registered tools (tool:{app_name}-tools/*, not externally reachable)
+- server_id: Points to macaw_client (the primary interface)
+- Tool isolation: Only macaw_client can invoke tools on _tools_client
+
 Install with: pip install -e /path/to/secureAI
 """
 
@@ -37,10 +43,15 @@ class SecureOpenAI:
     """
     Drop-in replacement for OpenAI client with MACAW security.
 
-    This NEW version uses proper resource names as tool names to match policies.
+    This version uses a two-client architecture for tool isolation:
+    - macaw_client: Primary, owns LLM operations (tool:{app_name}/generate, etc.)
+    - _tools_client: Internal, owns user-registered tools (not externally reachable)
+
+    server_id points to macaw_client, making it the primary external interface.
+    Tools are isolated: only macaw_client can invoke tools on _tools_client.
 
     Supports two modes:
-    1. Service mode (default): Creates service agent, registers tools, handles OpenAI calls
+    1. Service mode (default): Creates both clients, handles OpenAI calls
     2. User mode (jwt_token provided): Creates user agent with identity for direct calls
 
     For multi-user scenarios, use service mode + bind_to_user() to create per-user wrappers.
@@ -92,34 +103,48 @@ class SecureOpenAI:
         self.intent_policy = intent_policy or {}
 
         if self._mode == "service":
-            # SERVICE MODE: Register tools and handle OpenAI calls
-            # Tools with prompts declaration - MAPL-compliant: tool:<service>/<operation>
-            # Each tool declares which parameters are prompts for automatic authentication
-            self.tools = {
+            # SERVICE MODE: Two-client architecture for tool isolation
+            # - macaw_client: Primary, owns LLM operations (externally reachable)
+            # - _tools_client: Internal, owns user tools (not externally reachable)
+
+            # Tools client name (for trace clarity)
+            self._tools_name = f"{self.app_name}-tools"
+
+            # LLM tools on the primary client
+            llm_tools = {
                 f"tool:{self.app_name}/generate": {
                     "handler": self._handle_generate,
-                    "prompts": ["messages"]  # messages param is a prompt
+                    "prompts": ["messages"]
                 },
                 f"tool:{self.app_name}/complete": {
                     "handler": self._handle_complete,
-                    "prompts": ["prompt"]  # prompt param is a prompt
+                    "prompts": ["prompt"]
                 },
                 f"tool:{self.app_name}/embed": {
                     "handler": self._handle_embed,
-                    "prompts": ["input"]  # input param is a prompt
+                    "prompts": ["input"]
                 }
             }
 
-            # Create MACAWClient with unified tools config
+            # Primary client - owns LLM operations, externally reachable via server_id
             self.macaw_client = MACAWClient(
                 app_name=self.app_name,
                 app_version="1.0.0",
                 intent_policy=self.intent_policy,
-                tools=self.tools  # Unified: {name: {handler, prompts, ...}}
+                tools=llm_tools
+            )
+
+            # Internal tools client - owns user-registered tools, NOT externally reachable
+            self._tools_client = MACAWClient(
+                app_name=self._tools_name,
+                app_version="1.0.0",
+                intent_policy=self.intent_policy,
+                tools={}  # User tools added via register_tool
             )
         else:
             # USER MODE: Create user agent with identity
-            self.tools = {}
+            self._tools_name = None
+            self._tools_client = None
 
             self.macaw_client = MACAWClient(
                 user_name=user_name,
@@ -132,12 +157,24 @@ class SecureOpenAI:
                 }
             )
 
-        # Register with LocalAgent and get server ID
-        if self.macaw_client.register():
-            self.server_id = self.macaw_client.agent_id
-            logger.info(f"✅ SecureOpenAI registered as: {self.server_id} (mode: {self._mode})")
+        # Register with LocalAgent and get server ID(s)
+        if self._mode == "service":
+            # Register both clients
+            if self.macaw_client.register() and self._tools_client.register():
+                self.server_id = self.macaw_client.agent_id  # Primary interface!
+                self._tools_server_id = self._tools_client.agent_id  # Internal, not exposed
+                logger.info(f"✅ SecureOpenAI registered (two-client mode):")
+                logger.info(f"   Primary (LLM): {self.server_id}")
+                logger.info(f"   Internal (tools): {self._tools_server_id}")
+            else:
+                raise RuntimeError("Failed to register with MACAW LocalAgent")
         else:
-            raise RuntimeError("Failed to register with MACAW LocalAgent")
+            # User mode - single client
+            if self.macaw_client.register():
+                self.server_id = self.macaw_client.agent_id
+                logger.info(f"✅ SecureOpenAI registered as: {self.server_id} (mode: {self._mode})")
+            else:
+                raise RuntimeError("Failed to register with MACAW LocalAgent")
 
         # Mimic OpenAI API structure
         # MACAW-protected namespaces (route through PEP)
@@ -269,6 +306,9 @@ class SecureOpenAI:
         """
         Register a tool that OpenAI can call.
 
+        Tools are registered on _tools_client (internal, not externally reachable).
+        This provides tool isolation - only the LLM can invoke these tools.
+
         Args:
             name: Tool name (must match OpenAI function name)
             handler: Function to handle tool execution
@@ -276,19 +316,20 @@ class SecureOpenAI:
         Returns:
             Self for chaining
         """
-        # Store with MAPL-compliant name for _handle_generate() lookup
-        mapl_name = f"tool:{self.app_name}/{name}"
+        # Store with MAPL-compliant name using tools client's app_name
+        mapl_name = f"tool:{self._tools_name}/{name}"
 
         # Wrap handler to accept params dict and unpack as kwargs
         def wrapped_handler(params):
             return handler(**params)
 
-        self.user_tools[mapl_name] = wrapped_handler
+        self.user_tools[name] = wrapped_handler  # Store by simple name for lookup
+        self.user_tools[mapl_name] = wrapped_handler  # Also store by MAPL name
 
-        # Register with MACAWClient using MAPL name (for invoke_tool routing)
-        self.macaw_client.register_tool(mapl_name, wrapped_handler)
+        # Register with _tools_client (internal) using MAPL name
+        self._tools_client.register_tool(mapl_name, wrapped_handler)
 
-        logger.info(f"Registered tool: {name}")
+        logger.info(f"Registered tool: {name} -> {mapl_name}")
         return self
 
     def _auto_discover_tools(self, tools_metadata):
@@ -320,37 +361,39 @@ class SecureOpenAI:
                 func_def = tool_def.get("function", {})
                 func_name = func_def.get("name")
 
-                # Use MAPL-compliant name: tool:<app_name>/<func_name>
-                mapl_name = f"tool:{self.app_name}/{func_name}"
-                if func_name and mapl_name not in self.user_tools:
+                # Use MAPL-compliant name with tools client: tool:<app_name>-tools/<func_name>
+                mapl_name = f"tool:{self._tools_name}/{func_name}"
+                if func_name and func_name not in self.user_tools:
                     # Look for function in caller's scope
                     if func_name in search_scope:
                         func = search_scope[func_name]
                         if callable(func):
                             logger.info(f"Auto-discovered tool: {func_name} -> {mapl_name}")
-                            self._discovered_tools[mapl_name] = func
+                            self._discovered_tools[func_name] = func
+                            self.user_tools[func_name] = func
                             self.user_tools[mapl_name] = func
                     else:
                         logger.warning(f"Tool '{func_name}' not found in caller's scope")
 
-        # Sync all discovered tools with MACAW agent
+        # Sync all discovered tools with _tools_client (internal)
         if self._discovered_tools:
-            # Register each discovered tool with MACAWClient (public API)
-            for mapl_name, func in self._discovered_tools.items():
+            # Register each discovered tool with _tools_client
+            for func_name, func in self._discovered_tools.items():
+                mapl_name = f"tool:{self._tools_name}/{func_name}"
                 # Create wrapper handler that accepts dict parameter
                 def create_handler(tool_func):
                     def handler(params):
                         return tool_func(**params)
                     return handler
-                self.macaw_client.register_tool(mapl_name, create_handler(func))
+                self._tools_client.register_tool(mapl_name, create_handler(func))
             self._tools_registered = True
-            logger.info(f"Auto-registered {len(self._discovered_tools)} tools with MACAW")
+            logger.info(f"Auto-registered {len(self._discovered_tools)} tools with _tools_client")
 
     def _handle_generate(self, params: Dict[str, Any]):
         """
         Handle 'generate' tool (chat completions).
 
-        This runs INSIDE ToolAgent, so it's already PEP-protected!
+        This runs on macaw_client. Tool callbacks route to _tools_client (internal).
         Returns a serializable dict for MACAW protocol, or an iterator for streaming.
         """
         try:
@@ -375,26 +418,28 @@ class SecureOpenAI:
                 for tool_call in tool_calls:
                     func_name = tool_call.function.name
                     func_args = json.loads(tool_call.function.arguments)
-                    # Convert to MAPL-compliant name: tool:<app_name>/<func_name>
-                    mapl_name = f"tool:{self.app_name}/{func_name}"
+                    # Convert to MAPL-compliant name using tools client: tool:<app_name>-tools/<func_name>
+                    mapl_name = f"tool:{self._tools_name}/{func_name}"
 
                     logger.info(f"Processing tool call: {func_name} -> {mapl_name}")
 
-                    # Check if we have this tool (using MAPL name)
-                    if mapl_name not in self.user_tools:
+                    # Check if we have this tool (by simple name or MAPL name)
+                    if func_name not in self.user_tools and mapl_name not in self.user_tools:
                         result = {
                             'error': f"Tool not found: {mapl_name}",
                             'available_tools': list(self.user_tools.keys())
                         }
                     else:
                         # Invoke tool through MACAW (goes through PEP!)
+                        # Route from macaw_client to _tools_client (internal)
+                        # This provides tool isolation: only LLM can call tools
                         try:
                             result = self.macaw_client.invoke_tool(
                                 tool_name=mapl_name,
                                 parameters=func_args,
-                                target_agent=self.server_id  # Route to ourselves!
+                                target_agent=self._tools_server_id  # Internal tools client
                             )
-                            logger.info(f"Tool {func_name} executed successfully")
+                            logger.info(f"Tool {func_name} executed successfully via _tools_client")
                         except Exception as e:
                             error_msg = str(e)
                             # Check if MACAW blocked it
@@ -521,7 +566,7 @@ class SecureOpenAI:
                 Create chat completion - routes through MACAW.
 
                 This mimics OpenAI's API but goes through PEP!
-                Adapter creates authenticated prompts based on its own prompts declaration.
+                Routes to macaw_client (the primary interface).
                 Supports streaming when stream=True is passed.
                 """
                 # Auto-discover tools if provided
@@ -529,17 +574,16 @@ class SecureOpenAI:
                 if tools:
                     self.parent._auto_discover_tools(tools)
 
+                # Route to primary client (macaw_client)
                 tool_name = f"tool:{self.parent.app_name}/generate"
                 is_streaming = kwargs.get('stream', False)
 
-                # Route through MACAW's generate resource
-                # MAPL-compliant: tool:<service>/generate
-                # Authenticated prompts are auto-created by invoke_tool() based on registry
+                # Route through macaw_client (the primary LLM service)
                 result = self.parent.macaw_client.invoke_tool(
                     tool_name=tool_name,
                     parameters=kwargs,
-                    target_agent=self.parent.server_id,  # Route to ourselves!
-                    stream=is_streaming  # Explicit streaming flag
+                    target_agent=self.parent.server_id,  # = macaw_client.agent_id
+                    stream=is_streaming
                 )
 
                 if is_streaming:
@@ -579,12 +623,11 @@ class SecureOpenAI:
             """Create text completion - routes through MACAW."""
             tool_name = f"tool:{self.parent.app_name}/complete"
 
-            # MAPL-compliant: tool:<service>/complete
-            # Authenticated prompts are auto-created by invoke_tool() based on registry
+            # Route through macaw_client
             result = self.parent.macaw_client.invoke_tool(
                 tool_name=tool_name,
                 parameters=kwargs,
-                target_agent=self.parent.server_id  # Route to ourselves!
+                target_agent=self.parent.server_id  # = macaw_client.agent_id
             )
 
             # Handle errors
@@ -603,12 +646,11 @@ class SecureOpenAI:
             """Create embeddings - routes through MACAW."""
             tool_name = f"tool:{self.parent.app_name}/embed"
 
-            # MAPL-compliant: tool:<service>/embed
-            # Authenticated prompts are auto-created by invoke_tool() based on registry
+            # Route through macaw_client
             result = self.parent.macaw_client.invoke_tool(
                 tool_name=tool_name,
                 parameters=kwargs,
-                target_agent=self.parent.server_id  # Route to ourselves!
+                target_agent=self.parent.server_id  # = macaw_client.agent_id
             )
 
             # Handle errors
@@ -625,7 +667,7 @@ class BoundSecureOpenAI:
     Per-user wrapper for SecureOpenAI service.
 
     Created via SecureOpenAI.bind_to_user(user_client).
-    Routes all calls through the user's MACAWClient to the service,
+    Routes all calls through the user's MACAWClient to the service's LLM client,
     enabling per-user identity and policy enforcement.
 
     Authenticated prompts are auto-created by invoke_tool based on
@@ -747,20 +789,21 @@ class BoundSecureOpenAI:
 
             def create(self, **kwargs):
                 """
-                Create chat completion via user's client → service.
+                Create chat completion via user's client → LLM service.
 
+                Routes to server_id (which is _llm_client.agent_id).
                 Authenticated prompts are auto-created by invoke_tool.
                 Supports streaming with stream=True parameter.
                 """
                 tool_name = f"tool:{self.bound.service.app_name}/generate"
                 is_streaming = kwargs.get('stream', False)
 
-                # Route through user's client (auto-creates auth prompts!)
+                # Route through user's client to LLM service
                 result = self.bound.user_client.invoke_tool(
                     tool_name=tool_name,
                     parameters=kwargs,
-                    target_agent=self.bound.service.server_id,
-                    stream=is_streaming  # Explicit streaming flag
+                    target_agent=self.bound.service.server_id,  # = _llm_client.agent_id
+                    stream=is_streaming
                 )
 
                 if is_streaming:
@@ -797,13 +840,13 @@ class BoundSecureOpenAI:
             self.bound = bound
 
         def create(self, **kwargs):
-            """Create text completion via user's client → service."""
+            """Create text completion via user's client → LLM service."""
             tool_name = f"tool:{self.bound.service.app_name}/complete"
 
             result = self.bound.user_client.invoke_tool(
                 tool_name=tool_name,
                 parameters=kwargs,
-                target_agent=self.bound.service.server_id
+                target_agent=self.bound.service.server_id  # = _llm_client.agent_id
             )
 
             if isinstance(result, dict) and 'error' in result:
@@ -817,13 +860,13 @@ class BoundSecureOpenAI:
             self.bound = bound
 
         def create(self, **kwargs):
-            """Create embeddings via user's client → service."""
+            """Create embeddings via user's client → LLM service."""
             tool_name = f"tool:{self.bound.service.app_name}/embed"
 
             result = self.bound.user_client.invoke_tool(
                 tool_name=tool_name,
                 parameters=kwargs,
-                target_agent=self.bound.service.server_id
+                target_agent=self.bound.service.server_id  # = _llm_client.agent_id
             )
 
             if isinstance(result, dict) and 'error' in result:
