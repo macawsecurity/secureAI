@@ -1,11 +1,11 @@
 """
 MACAW MCP Adapter - FastMCP-compatible API with MACAW Security.
 
-Provides the same decorator-based API as FastMCP while routing all tool
-invocations through the MACAW security layer for policy enforcement,
-cryptographic signing, and audit logging.
+Two main components:
+1. SecureMCP - For MCP servers YOU write (wrap your tools with MACAW security)
+2. SecureMCPProxy - For MCP servers you DON'T control (inline gateway to external servers)
 
-Usage:
+Usage - SecureMCP (your servers):
     from macaw_adapters.mcp import SecureMCP, Context
 
     mcp = SecureMCP("calculator")
@@ -14,31 +14,50 @@ Usage:
     def add(a: float, b: float) -> float:
         return a + b
 
-    if __name__ == "__main__":
-        mcp.run()
+    mcp.run()
+
+Usage - SecureMCPProxy (external servers):
+    from macaw_adapters.mcp import SecureMCPProxy
+
+    # Connect to external MCP server (Salesforce, Google, etc.)
+    proxy = SecureMCPProxy(
+        app_name="salesforce-mcp",
+        upstream_url="https://mcp.salesforce.com",
+        upstream_auth={"type": "bearer", "token": SF_TOKEN}
+    )
+
+    # Call tools - MACAW security applied
+    result = proxy.call_tool("query_accounts", {"limit": 10})
 
 Features:
-    - FastMCP-compatible decorator API
+    - FastMCP-compatible decorator API (SecureMCP)
+    - Inline gateway for external MCP servers (SecureMCPProxy)
     - Policy-enforced tool execution
     - Cryptographic audit trail
-    - MCP protocol compliant
+    - Multi-user identity via bind_to_user()
 
 For more information: https://macawsecurity.ai
 """
 
-__version__ = "0.2.0"
+__version__ = "0.8.5"
 
-# Primary FastMCP-compatible API
+# Primary FastMCP-compatible API (your MCP servers)
 from .mcp import SecureMCP, Context
+
+# Inline Gateway for external MCP servers
+from .proxy import SecureMCPProxy, BoundMCPProxy
 
 # Legacy API (backwards compatibility)
 from .server import Server
 from .client import Client
 
 __all__ = [
-    # Primary API
+    # Your MCP servers
     "SecureMCP",
     "Context",
+    # External MCP servers (inline gateway)
+    "SecureMCPProxy",
+    "BoundMCPProxy",
     # Legacy
     "Server",
     "Client",

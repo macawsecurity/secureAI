@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
 [![Version](https://img.shields.io/badge/version-0.5.25-green.svg)](https://github.com/macawsecurity/secureAI)
 
-**Drop-in replacements for OpenAI, Anthropic, LangChain, and MCP for deterministic policy-based security controls for enterprise apps.**
+**Drop-in replacements for OpenAI, Anthropic, LangChain, MCP, and MCP Proxy (inline gateway) for deterministic policy-based security controls for enterprise apps.**
 
 ## What This Is
 
@@ -32,6 +32,7 @@ pip install macaw-adapters[openai]
 pip install macaw-adapters[anthropic]
 pip install macaw-adapters[langchain]
 pip install macaw-adapters[mcp]
+pip install macaw-adapters[mcp-proxy]  # For external MCP servers
 ```
 
 **From source:**
@@ -79,7 +80,7 @@ response = client.messages.create(
 )
 ```
 
-### SecureMCP
+### SecureMCP (Your MCP Servers)
 
 ```python
 from macaw_adapters.mcp import SecureMCP
@@ -92,6 +93,33 @@ def add(a: float, b: float) -> float:
 
 mcp.run()
 ```
+
+### SecureMCPProxy (External MCP Servers)
+
+Inline gateway for third-party MCP servers (Salesforce, Google, Slack, etc.):
+
+```python
+from macaw_adapters.mcp import SecureMCPProxy
+
+# Connect to external MCP server - MACAW security applied automatically
+proxy = SecureMCPProxy(
+    app_name="salesforce-mcp",
+    upstream_url="https://mcp.salesforce.com",
+    upstream_auth={"type": "bearer", "token": SF_TOKEN}
+)
+
+# Discover available tools
+tools = proxy.list_tools()
+
+# Call tools - policy enforced, signed, audited
+result = proxy.call_tool("query_accounts", {"limit": 10})
+
+# Multi-user: bind to user identity
+user_proxy = proxy.bind_to_user(user_client)
+result = user_proxy.call_tool("query_accounts", {"limit": 10})
+```
+
+Install with: `pip install macaw-adapters[mcp-proxy]`
 
 ### LangChain
 
@@ -184,7 +212,8 @@ response = user_openai.chat.completions.create(...)
 |---------|---------|-------|
 | SecureOpenAI | `macaw_adapters.openai` | OpenAI Python SDK |
 | SecureAnthropic | `macaw_adapters.anthropic` | Anthropic Python SDK |
-| SecureMCP | `macaw_adapters.mcp` | Model Context Protocol |
+| SecureMCP | `macaw_adapters.mcp` | Your MCP servers (FastMCP-compatible) |
+| SecureMCPProxy | `macaw_adapters.mcp` | External MCP servers (inline gateway) |
 | LangChain | `macaw_adapters.langchain` | LangChain (OpenAI, Anthropic, Agents) |
 
 ## Examples
@@ -219,7 +248,8 @@ Console > Dev Hub
 │   │   ├── Progress Tracking
 │   │   ├── Sampling
 │   │   ├── Elicitation
-│   │   └── Roots
+│   │   ├── Roots
+│   │   └── MCP Proxy (Inline Gateway for External MCP)
 │   └── LangChain
 │       ├── Drop-in Agents
 │       ├── Multi-user Permissions
