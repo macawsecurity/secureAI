@@ -58,7 +58,7 @@ def main():
     try:
         proxy = SecureMCPProxy(
             app_name="salesforce-dx",
-            command=["npx", "@salesforce/mcp", "--orgs", "DEFAULT"],
+            command=["npx", "@salesforce/mcp", "--orgs", "DEFAULT", "--dynamic-tools"],
             env={
                 "HOME": os.environ.get("HOME", ""),
                 "PATH": os.environ.get("PATH", ""),
@@ -89,26 +89,29 @@ def main():
         print("   ERROR: No tools discovered")
         return 1
 
-    # Step 4: Example tool calls (commented - uncomment to test)
-    print("\n4. Example tool calls:")
-    print("   (Uncomment in code to test with your org)")
+    # Step 4: Test tool calls
+    print("\n4. Testing tool calls...")
 
-    # Example: List orgs
-    # result = proxy.call_tool("org_list", {})
-    # print(f"   Orgs: {result}")
+    # Get current username (requires directory - use current dir)
+    try:
+        result = proxy.call_tool("get_username", {"directory": os.getcwd()})
+        content = result.get('result', result) if isinstance(result, dict) else result
+        print(f"   get_username: {content}")
+    except Exception as e:
+        print(f"   get_username error: {e}")
 
-    # Example: Run SOQL query
-    # result = proxy.call_tool("data_query", {
-    #     "query": "SELECT Id, Name FROM Account LIMIT 5"
-    # })
-    # print(f"   Query result: {result}")
+    # List available tools (dynamic)
+    try:
+        result = proxy.call_tool("list_tools", {})
+        content = result.get('result', result) if isinstance(result, dict) else result
+        preview = str(content)[:300] if content else "(empty)"
+        print(f"   list_tools: {preview}...")
+    except Exception as e:
+        print(f"   list_tools error: {e}")
 
     print("\n" + "=" * 60)
-    print("SUCCESS: SecureMCPProxy connected to Salesforce DX!")
+    print("SUCCESS: SecureMCPProxy + Salesforce DX works!")
     print("=" * 60)
-    print("\nNext steps:")
-    print("  - Uncomment tool calls in this file to test")
-    print("  - Check available tools with proxy.list_tools()")
     return 0
 
 
