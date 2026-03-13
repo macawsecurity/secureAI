@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "macaw-adapters"
-version = "0.8.5"
+version = "0.8.6"
 description = "Secure AI Adapters for OpenAI, Claude, LangChain, LiteLLM (100+ providers), MCP, and MCP Proxy (inline gateway)"
 readme = "README.md"
 license = {text = "Apache-2.0"}
