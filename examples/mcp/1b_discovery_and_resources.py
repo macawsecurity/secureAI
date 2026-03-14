@@ -43,7 +43,7 @@ def find_calculator_server(client):
         print("  python3 securemcp_calculator.py")
         return None
 
-    return calc_servers[-1]["agent_id"]
+    return calc_servers[0]["agent_id"]
 
 
 async def main():

@@ -35,7 +35,7 @@ def find_sampling_server(client):
         if "sampling-demo" in a.get("agent_id", "")
         and "/tool." not in a.get("agent_id", "")
     ]
-    return matching[-1] if matching else None  # Return last (most recent)
+    return matching[0] if matching else None  # Return first (most recent)
 
 
 def create_llm_handler():

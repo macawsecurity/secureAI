@@ -30,7 +30,7 @@ def find_calculator_server(client):
         if "/app:securemcp-calculator:" in a.get("agent_id", "")
         and "/tool." not in a.get("agent_id", "")
     ]
-    return calc_servers[-1] if calc_servers else None
+    return calc_servers[0] if calc_servers else None
 
 
 def main():
