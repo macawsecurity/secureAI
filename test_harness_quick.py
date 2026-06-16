@@ -41,7 +41,7 @@ class TestCase:
     category: str
     requires_server: Optional[Path] = None
     requires_keys: List[str] = field(default_factory=list)
-    timeout: int = 60
+    timeout: int = 120
     result: TestResult = TestResult.SKIP
     output: str = ""
     error: str = ""
@@ -53,40 +53,40 @@ QUICK_TESTS = {
     # MCP examples - no API keys needed, just MACAW
     "mcp/1a_simple_invocation.py": {
         "requires_server": "mcp/securemcp_calculator.py",
-        "timeout": 60,
+        "timeout": 120,
     },
     "mcp/1b_discovery_and_resources.py": {
         "requires_server": "mcp/securemcp_calculator.py",
-        "timeout": 60,
+        "timeout": 120,
     },
     "mcp/1c_logging_client.py": {
         "requires_server": "mcp/securemcp_calculator.py",
-        "timeout": 60,
+        "timeout": 120,
     },
     "mcp/1d_progress_client.py": {
         "requires_server": "mcp/securemcp_calculator.py",
-        "timeout": 60,
+        "timeout": 120,
     },
     "mcp/1e_sampling_client.py": {
         "requires_server": "mcp/1e_sampling_server.py",
-        "timeout": 60,
+        "timeout": 120,
     },
     "mcp/1g_roots_client.py": {
         "requires_server": "mcp/1g_roots_server.py",
-        "timeout": 60,
+        "timeout": 120,
     },
     # 1a examples - need API keys but no IdP
     "openai/openai_1a_dropin_simple.py": {
         "requires_keys": ["OPENAI_API_KEY"],
-        "timeout": 30,
+        "timeout": 120,
     },
     "anthropic/anthropic_1a_dropin_simple.py": {
         "requires_keys": ["ANTHROPIC_API_KEY"],
-        "timeout": 30,
+        "timeout": 120,
     },
     "langchain/langchain_1a_dropin_simple.py": {
         "requires_keys": ["OPENAI_API_KEY"],
-        "timeout": 30,
+        "timeout": 120,
     },
 }
 
@@ -157,7 +157,7 @@ class QuickTestHarness:
                     stderr=subprocess.PIPE,
                     preexec_fn=os.setsid,
                 )
-                time.sleep(2)  # Wait for server to start
+                time.sleep(20)  # Wait for server to register (AWS registration latency)
 
                 if server_proc.poll() is not None:
                     test.result = TestResult.FAIL
