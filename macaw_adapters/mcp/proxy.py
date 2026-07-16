@@ -466,6 +466,37 @@ class SecureMCPProxy:
         """
         return BoundMCPProxy(self, user_client)
 
+    def run(self, transport: str = "stdio", port: int = 8080):
+        """
+        Serve the proxied upstream tools to native (non-MACAW) MCP clients.
+
+        Turns this proxy into a drop-in replacement for the upstream server: point
+        Claude Desktop / Cursor at this process instead of the real one and every
+        tool call is policy-checked, signed, and audited on the way through.
+
+            proxy = SecureMCPProxy(app_name="databricks", command=["uvx", "..."])
+            proxy.run()                              # stdio
+            proxy.run(transport="http", port=8080)   # http at /mcp
+
+        Args:
+            transport: "stdio" or "http" (how external clients reach this proxy;
+                       independent of the transport used to reach upstream)
+            port: Bind port for transport="http"
+        """
+        from ._endpoint import serve
+
+        asyncio.run(
+            serve(
+                self.app_name,
+                "1.0.0",
+                registry=self.macaw_client,
+                target_agent=self.agent_id,
+                prefix=f"tool:{self.app_name}/",
+                transport=transport,
+                port=port,
+            )
+        )
+
     def refresh_tools(self):
         """
         Re-discover tools from upstream MCP server.

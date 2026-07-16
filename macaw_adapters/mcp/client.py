@@ -552,7 +552,10 @@ class Client:
             prompt = params.get("prompt", "")
             system_prompt = params.get("system_prompt")
             max_tokens = params.get("max_tokens", 1000)
-            temperature = params.get("temperature", 0.7)
+            # None means the calling tool did not ask for a temperature. Do not
+            # invent one here - only the handler knows which model it is calling,
+            # and some models reject sampling parameters outright.
+            temperature = params.get("temperature")
 
             # Remove known params, pass rest as kwargs
             known_params = {"prompt", "system_prompt", "max_tokens", "temperature",

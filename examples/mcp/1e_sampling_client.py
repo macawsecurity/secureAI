@@ -26,6 +26,8 @@ import os
 
 from macaw_adapters.mcp import Client
 
+MODEL = "claude-opus-4-8"
+
 
 def find_sampling_server(client):
     """Find the most recent sampling demo server."""
@@ -46,12 +48,15 @@ def create_llm_handler():
         try:
             import anthropic
             client = anthropic.Anthropic(api_key=api_key)
-            print("Using Claude API (claude-sonnet-4-20250514)")
+            print(f"Using Claude API ({MODEL})")
 
-            def claude_handler(prompt, system_prompt=None, max_tokens=1000, temperature=0.7, **kwargs):
+            def claude_handler(prompt, system_prompt=None, max_tokens=1000, temperature=None, **kwargs):
                 print(f"  [Claude] Prompt: {prompt[:60]}...")
+                # temperature is intentionally not forwarded: this handler owns the
+                # model choice, and current Claude models reject temperature/top_p/
+                # top_k with a 400. MCP treats sampling params as ignorable hints.
                 response = client.messages.create(
-                    model="claude-sonnet-4-20250514",
+                    model=MODEL,
                     max_tokens=max_tokens,
                     system=system_prompt or "You are a helpful assistant.",
                     messages=[{"role": "user", "content": prompt}]
@@ -69,7 +74,7 @@ def create_llm_handler():
     # Mock handler fallback
     print("Using mock LLM (set ANTHROPIC_API_KEY for real Claude)")
 
-    def mock_handler(prompt, system_prompt=None, max_tokens=1000, temperature=0.7, **kwargs):
+    def mock_handler(prompt, system_prompt=None, max_tokens=1000, temperature=None, **kwargs):
         print(f"  [Mock] Prompt: {prompt[:60]}...")
         if "summarize" in prompt.lower():
             return "This is a mock summary of the provided text."

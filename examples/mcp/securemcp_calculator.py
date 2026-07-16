@@ -208,28 +208,41 @@ def calculation_prompt(numbers: str, operation: str = "add") -> str:
 
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("SecureMCP Calculator Server")
-    print("=" * 60)
-    print()
-    print("This server provides:")
-    print("  Tools: add, subtract, multiply, divide, calculate, batch_calculate")
-    print("  Resources: calc://history")
-    print("  Prompts: calculation_prompt")
-    print()
-    print("Demonstrates:")
-    print("  - ctx.info/debug/warning/error() - Logging")
-    print("  - ctx.audit() - Signed audit entries")
-    print("  - ctx.report_progress() - Progress reporting")
-    print("  - ctx.get/set() - Context vault")
-    print()
-    print("All invocations are secured by MACAW:")
-    print("  - Cryptographic signing")
-    print("  - Policy enforcement")
-    print("  - Audit logging")
-    print()
-    print("Starting server...")
-    print("=" * 60)
+    import sys
+
+    # Optional transport for native (non-MACAW) MCP clients:
+    #   python securemcp_calculator.py           MACAW mesh only
+    #   python securemcp_calculator.py stdio     also serve Claude Desktop / Cursor
+    #   python securemcp_calculator.py http      also serve http://localhost:8080/mcp
+    transport = sys.argv[1] if len(sys.argv) > 1 else None
+
+    # stdout is the JSON-RPC stream when transport="stdio", so the banner goes to stderr.
+    out = sys.stderr
+
+    print("=" * 60, file=out)
+    print("SecureMCP Calculator Server", file=out)
+    print("=" * 60, file=out)
+    print(file=out)
+    print("This server provides:", file=out)
+    print("  Tools: add, subtract, multiply, divide, calculate, batch_calculate", file=out)
+    print("  Resources: calc://history", file=out)
+    print("  Prompts: calculation_prompt", file=out)
+    print(file=out)
+    print("Demonstrates:", file=out)
+    print("  - ctx.info/debug/warning/error() - Logging", file=out)
+    print("  - ctx.audit() - Signed audit entries", file=out)
+    print("  - ctx.report_progress() - Progress reporting", file=out)
+    print("  - ctx.get/set() - Context vault", file=out)
+    print(file=out)
+    print("All invocations are secured by MACAW:", file=out)
+    print("  - Cryptographic signing", file=out)
+    print("  - Policy enforcement", file=out)
+    print("  - Audit logging", file=out)
+    print(file=out)
+    if transport:
+        print(f"Also serving native MCP clients over: {transport}", file=out)
+    print("Starting server...", file=out)
+    print("=" * 60, file=out)
 
     # Run the server
-    mcp.run()
+    mcp.run(transport=transport)

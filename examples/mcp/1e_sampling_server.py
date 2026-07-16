@@ -60,17 +60,31 @@ JSON:"""
 
 
 if __name__ == "__main__":
-    print("=" * 50)
-    print("Example 1e: Sampling Demo Server")
-    print("=" * 50)
-    print()
-    print("Tools: summarize, analyze_sentiment")
-    print()
-    print("These tools use ctx.sample() to request LLM completions")
-    print("from the client's configured handler.")
-    print()
-    print("Run client: python3 1e_sampling_client.py")
-    print()
-    print("Press Ctrl+C to stop")
-    print("=" * 50)
-    mcp.run()
+    import sys
+
+    # Optional transport for native (non-MACAW) MCP clients:
+    #   python 1e_sampling_server.py           MACAW mesh only (use 1e_sampling_client.py)
+    #   python 1e_sampling_server.py stdio     also serve native MCP clients
+    transport = sys.argv[1] if len(sys.argv) > 1 else None
+
+    # stdout is the JSON-RPC stream when transport="stdio", so the banner goes to stderr.
+    out = sys.stderr
+
+    print("=" * 50, file=out)
+    print("Example 1e: Sampling Demo Server", file=out)
+    print("=" * 50, file=out)
+    print(file=out)
+    print("Tools: summarize, analyze_sentiment", file=out)
+    print(file=out)
+    print("These tools use ctx.sample() to request LLM completions", file=out)
+    print("from the client's configured handler.", file=out)
+    print(file=out)
+    if transport:
+        print(f"Also serving native MCP clients over: {transport}", file=out)
+        print("Run client: python3 3c_native_mcp_sampling.py", file=out)
+    else:
+        print("Run client: python3 1e_sampling_client.py", file=out)
+    print(file=out)
+    print("Press Ctrl+C to stop", file=out)
+    print("=" * 50, file=out)
+    mcp.run(transport=transport)

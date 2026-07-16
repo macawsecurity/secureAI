@@ -33,6 +33,20 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
+def _json_schema(parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert _extract_parameters() output into a JSON Schema for MCP's inputSchema."""
+    return {
+        "type": "object",
+        "properties": {
+            name: {"type": info.get("type", "string")}
+            for name, info in parameters.items()
+        },
+        "required": [
+            name for name, info in parameters.items() if info.get("required")
+        ],
+    }
+
+
 @dataclass
 class Context:
     """
@@ -100,7 +114,7 @@ class Context:
         prompt: str,
         system_prompt: str = None,
         max_tokens: int = 1000,
-        temperature: float = 0.7,
+        temperature: Optional[float] = None,
         **kwargs
     ) -> str:
         """
@@ -113,7 +127,11 @@ class Context:
             prompt: The user prompt to send to the LLM
             system_prompt: Optional system prompt
             max_tokens: Maximum tokens in response
-            temperature: Sampling temperature (0.0-1.0)
+            temperature: Sampling temperature. Left unset by default: this server
+                does not know which model the client will use, and sampling
+                parameters are rejected outright by some models. Set it only if
+                the caller has a reason to, and accept that a client may ignore
+                or reject it.
             **kwargs: Additional LLM parameters
 
         Returns:
@@ -132,19 +150,25 @@ class Context:
         if not self.source_agent:
             raise RuntimeError("No source_agent available - sampling requires caller context")
 
+        params = {
+            "prompt": prompt,
+            "system_prompt": system_prompt,
+            "max_tokens": max_tokens,
+            "request_id": self.request_id,
+            "source_tool": self.tool_name,
+            **kwargs
+        }
+        # Only send what the caller actually asked for. Inventing a temperature
+        # here means shipping a model-specific parameter to a model we know
+        # nothing about - which is the whole point of sampling.
+        if temperature is not None:
+            params["temperature"] = temperature
+
         # Route sampling request back to the calling client's sampling handler
         logger.info(f"[ctx.sample] Calling back to source_agent: {self.source_agent}")
         result = self._client.invoke_tool(
             "_mcp_sample",
-            {
-                "prompt": prompt,
-                "system_prompt": system_prompt,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "request_id": self.request_id,
-                "source_tool": self.tool_name,
-                **kwargs
-            },
+            params,
             target_agent=self.source_agent  # Call back to the original caller
         )
 
@@ -492,16 +516,25 @@ class SecureMCP:
 
         return decorator
 
-    def run(self, transport: str = "stdio") -> None:
+    def run(self, transport: str = None, port: int = 8080) -> None:
         """
         Start the MCP server.
 
         Args:
-            transport: Transport type ("stdio" or "sse")
-        """
-        asyncio.run(self._run_async(transport))
+            transport: How external (non-MACAW) MCP clients may reach this server.
+                None    - MACAW mesh only. Tools are reachable via invoke_tool()
+                          from MACAW-aware clients. This is the default.
+                "stdio" - also serve native MCP clients over stdin/stdout.
+                          NOTE: stdout becomes JSON-RPC; log to stderr instead.
+                "http"  - also serve native MCP clients at http://host:port/mcp
+            port: Bind port for transport="http"
 
-    async def _run_async(self, transport: str) -> None:
+        Either way every invocation goes through the MACAW PEP: policy, signing,
+        and audit are identical on both paths.
+        """
+        asyncio.run(self._run_async(transport, port))
+
+    async def _run_async(self, transport: str = None, port: int = 8080) -> None:
         """Async server run."""
         try:
             # Initialize MACAWClient with registered tools
@@ -513,9 +546,22 @@ class SecureMCP:
             logger.info(f"  Resources: {list(self._resources.keys())}")
             logger.info(f"  Prompts: {list(self._prompts.keys())}")
 
-            # Keep running until interrupted
-            while True:
-                await asyncio.sleep(1)
+            if transport is None:
+                # MACAW mesh only. The listener lives inside MACAWClient (started by
+                # register()); this loop just keeps the process alive.
+                while True:
+                    await asyncio.sleep(1)
+            else:
+                from ._endpoint import serve
+                await serve(
+                    self.name,
+                    self.version,
+                    registry=self._client,
+                    target_agent=self.agent_id,
+                    prefix="",
+                    transport=transport,
+                    port=port,
+                )
 
         except KeyboardInterrupt:
             logger.info("Shutting down...")
@@ -543,7 +589,10 @@ class SecureMCP:
                         tool_info["wants_context"]
                     ),
                     "description": tool_info["description"],
-                    "prompts": tool_info.get("prompts", [])
+                    "prompts": tool_info.get("prompts", []),
+                    # Schema lives on the MACAW registry so the MCP endpoint can
+                    # answer tools/list from the same place policy is enforced.
+                    "metadata": {"schema": _json_schema(tool_info["parameters"])}
                 }
 
             # Register resources as tools with resource: prefix

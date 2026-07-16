@@ -161,11 +161,16 @@ async def analyze(ctx: Context, text: str) -> dict:
     summary = await ctx.sample(
         prompt=f"Summarize: {text}",
         system_prompt="You are a helpful assistant.",
-        max_tokens=500,
-        temperature=0.7
+        max_tokens=500
     )
     return {"summary": summary}
 ```
+
+**Note on `temperature`:** it is unset by default and is not sent unless you pass
+one. The server does not know which model the client will use, and current Claude
+models reject sampling parameters. Pass a temperature only if you know the client's
+model accepts it — and expect the client may ignore it regardless (MCP treats
+sampling parameters as hints).
 
 ### Elicitation (MCP Elicitation)
 

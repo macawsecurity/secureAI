@@ -6,7 +6,7 @@ Usage:
     from macaw_adapters.langchain.anthropic import ChatAnthropic
 
     # Same API, MACAW security is invisible
-    llm = ChatAnthropic(model="claude-3-opus-20240229")
+    llm = ChatAnthropic(model="claude-opus-4-8")
     response = llm.invoke("Hello, world!")
 
 Security:
@@ -38,8 +38,8 @@ class ChatAnthropic:
 
     def __init__(
         self,
-        model: str = "claude-3-opus-20240229",
-        temperature: float = 0.7,
+        model: str = "claude-opus-4-8",
+        temperature: Optional[float] = None,
         max_tokens: int = 1024,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
@@ -51,8 +51,10 @@ class ChatAnthropic:
         Initialize SecureChatAnthropic.
 
         Args:
-            model: Anthropic model name (e.g., "claude-3-opus-20240229", "claude-3-sonnet-20240229")
-            temperature: Sampling temperature (0.0 to 1.0)
+            model: Anthropic model name (e.g., "claude-opus-4-8", "claude-sonnet-5")
+            temperature: Sampling temperature (0.0 to 1.0). Unset by default:
+                current Claude models reject sampling parameters, and the
+                `is not None` guards below skip it when unset.
             max_tokens: Maximum tokens to generate
             api_key: Anthropic API key (or use ANTHROPIC_API_KEY env var)
             base_url: Custom API base URL
