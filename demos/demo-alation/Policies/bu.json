@@ -1,0 +1,22 @@
+{
+  "policy_id": "bu:analytics",
+  "version": "0.1.1",
+  "scope": "global",
+  "resources": [],
+  "extends": "company:alation-MACAW",
+  "constraints": {
+    "parameters": {
+      "tool:*/complete": {
+        "max_tokens": {
+          "max": 1000000
+        }
+      },
+      "tool:*/generate": {
+        "max_tokens": {
+          "max": 1000000
+        }
+      }
+    }
+  },
+  "description": "Analytics BU"
+}
