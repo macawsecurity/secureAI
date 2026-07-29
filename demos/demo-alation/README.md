@@ -30,7 +30,6 @@ alice is a manager, bob is an analyst. Both log in through Auth0. Each makes 3 L
 flowchart LR
     A["User: alice<br/>(manager)"]
     B["User: bob<br/>(analyst)"]
-    IDP["Auth0<br/>OAuth IdP"]
 
     subgraph MACAW["MACAW"]
         direction TB
@@ -43,9 +42,8 @@ flowchart LR
 
     A -->|per-request| MACAW
     B -->|per-request| MACAW
-    IDP -.->|identity claims| BR
-    PE -->|SecureOpenAI adapter| OAI["OpenAI<br/>gpt-4o / gpt-4o-mini"]
-    PE -->|SecureMCPProxy adapter| ALN["Alation Remote MCP Server<br/>/ai/mcp"]
+    PE --> OAI["OpenAI<br/>gpt-4o / gpt-4o-mini"]
+    PE --> ALN["Alation Remote MCP Server<br/>/ai/mcp"]
     ALN --> DBX["Databricks<br/>workspace.macaw_demo.eng_comp"]
 ```
 
