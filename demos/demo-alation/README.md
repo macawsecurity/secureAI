@@ -49,10 +49,7 @@ flowchart LR
     ALN --> DBX["Databricks<br/>workspace.macaw_demo.eng_comp"]
 ```
 
-Every call goes to MACAW first. The Bridge works out who is calling from their Auth0 claims. For
-SQL calls the verifier reads the statement and adds some facts to the parameters. The policy engine
-combines all the policies that apply and decides: allow, deny, or wait for an approval. The decision
-is written to the audit log. If it was allowed, the call goes on to OpenAI or Alation.
+
 
 ---
 
@@ -97,11 +94,16 @@ will be rejected.
 
 ```bash
 python utility/get_alation_user_token.py     # opens a browser, does OAuth + PKCE
-export ALATION_TOKEN="<the access token it prints>"
 ```
 
-The token lasts 72 hours. After that every Alation call returns 401 and the proxy fails at startup.
-The script also prints a refresh token, so you can renew without the browser:
+It prints two things: an **access token** and a **refresh token**.
+
+```bash
+export ALATION_TOKEN="<the access token>"
+```
+
+The access token lasts 72 hours. Keep the refresh token, and use it to get a new access token
+without going through the browser again:
 
 ```bash
 python utility/get_alation_user_token.py --refresh <REFRESH_TOKEN>
@@ -119,7 +121,7 @@ MACAW does not do its own logins. It reads the claims from your IdP and maps the
 name:           alation-MACAW
 domain:         dev-5ntnefdmlsiwh7nv.us.auth0.com
 client_id:      0C1R7rIwNCmpw4ZLgtKKG7rAmbU0hird
-client_secret:  <paste the Auth0 application client secret>
+client_secret:  
 api_audience:   https://alation-macaw
 
 mappings:
@@ -156,10 +158,7 @@ Each claim becomes the name of a policy to look up:
 | `organization_path` | `alation-MACAW` | `company:alation-MACAW` |
 | `roles_path` | `["manager"]` | matches `approval_criteria: role:manager` |
 
-Get `name_path` right. It has to point at a claim that holds the short username. If that claim is
-missing, MACAW falls back to the email and looks for `user:alice@example.com`, which the Console
-cannot store (ids allow letters, numbers, dash, underscore, colon and space). You then see a
-`policy_fetch` with `found: false` and no caller layer in the trail.
+
 
 ---
 
