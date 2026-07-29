@@ -121,7 +121,7 @@ MACAW does not do its own logins. It reads the claims from your IdP and maps the
 name:           alation-MACAW
 domain:         dev-5ntnefdmlsiwh7nv.us.auth0.com
 client_id:      0C1R7rIwNCmpw4ZLgtKKG7rAmbU0hird
-client_secret:  
+client_secret:  iyBrYQKGKU68Z_ge04MqwQHCjbilKlgEBsfknIkC6XQ0iAe_6NAcaJxjJMteK7wr
 api_audience:   https://alation-macaw
 
 mappings:
