@@ -117,12 +117,12 @@ MACAW does not do its own logins. It reads the claims from your IdP and maps the
 
 ```yaml
 name:           alation-MACAW
-domain:         dev-5ntnefdmlsiwh7nv.us.auth0.com
-client_id:      0C1R7rIwNCmpw4ZLgtKKG7rAmbU0hird
-client_secret:  <paste the Auth0 application client secret>
-api_audience:   https://alation-macaw
+domain:         
+client_id:      
+client_secret:  
+api_audience:   https://alation-macaws
 
-mappings:
+mappings:s
   subject_path:        sub
   email_path:          email
   name_path:           https://macaw.local/username
