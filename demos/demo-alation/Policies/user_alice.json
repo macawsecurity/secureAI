@@ -1,6 +1,6 @@
 {
-  "policy_id": "user:bob",
-  "version": "0.6.0",
+  "policy_id": "user:alice",
+  "version": "0.6.1",
   "scope": "global",
   "resources": [
     "tool:alation-remote-proxy/run_query_sql_custom_adi",
@@ -11,7 +11,7 @@
     "attestations": {
       "eng_comp_attestation": {
         "approval_criteria": "role:manager",
-        "description": "Analyst touched eng_comp -- requires a manager (alice) to attest",
+        "description": "Analyst touched eng_comp -- requires a manager (bob) to attest",
         "one_time": true,
         "time_to_live": 300,
         "timeout": 300
@@ -28,15 +28,15 @@
         }
       },
       "tool:openai-service/generate": {
+        "max_tokens": {
+          "max": 100,
+          "type": "integer"
+        },
         "model": {
-          "type": "string",
           "allowed_values": [
             "gpt-4o-mini"
-          ]
-        },
-        "max_tokens": {
-          "type": "integer",
-          "max": 100
+          ],
+          "type": "string"
         }
       }
     }
@@ -44,5 +44,5 @@
   "attestations": [
     "eng_comp_attestation::{ params.touches_eng_comp == 'true' }"
   ],
-  "description": "bob -- role: analyst (narrower LLM access than alice). Any statement touching eng_comp attests to a manager; other tables ungated within the select/update allow-list; DELETE/DDL denied. OpenAI: gpt-4o-mini only, max_tokens<=100."
+  "description": "bob -- role: analyst (narrower LLM access than bob). Any statement touching eng_comp attests to a manager; other tables ungated within the select/update allow-list; DELETE/DDL denied. OpenAI: gpt-4o-mini only, max_tokens<=100."
 }

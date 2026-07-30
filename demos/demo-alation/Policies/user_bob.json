@@ -1,6 +1,6 @@
 {
-  "policy_id": "user:alice",
-  "version": "0.6.0",
+  "policy_id": "user:bob",
+  "version": "0.3.5",
   "scope": "global",
   "resources": [
     "tool:alation-remote-proxy/run_query_sql_custom_adi",
@@ -10,8 +10,17 @@
     "tool:openai-service/generate",
     "tool:anthropic-service/generate"
   ],
-  "extends": "bu:analytics",
+  "extends": "team:reporting",
   "constraints": {
+    "attestations": {
+      "eng_comp_update_attestation": {
+        "approval_criteria": "role:admin",
+        "description": "Admin UPDATE on eng_comp -- requires an admin to attest",
+        "one_time": true,
+        "time_to_live": 300,
+        "timeout": 300
+      }
+    },
     "parameters": {
       "tool:alation-remote-proxy/run_analytics_agent_macaw": {
         "stmt_type": {
@@ -40,44 +49,35 @@
           "type": "string"
         }
       },
-      "tool:openai-service/generate": {
+      "tool:anthropic-service/generate": {
+        "max_tokens": {
+          "max": 100,
+          "type": "integer"
+        },
         "model": {
-          "type": "string",
+          "allowed_values": [
+            "claude-sonnet-5"
+          ],
+          "type": "string"
+        }
+      },
+      "tool:openai-service/generate": {
+        "max_tokens": {
+          "max": 2000,
+          "type": "integer"
+        },
+        "model": {
           "allowed_values": [
             "gpt-4o-mini",
             "gpt-4o"
-          ]
-        },
-        "max_tokens": {
-          "type": "integer",
-          "max": 2000
+          ],
+          "type": "string"
         }
-      },
-      "tool:anthropic-service/generate": {
-        "model": {
-          "type": "string",
-          "allowed_values": [
-            "claude-sonnet-5"
-          ]
-        },
-        "max_tokens": {
-          "type": "integer",
-          "max": 100
-        }
-      }
-    },
-    "attestations": {
-      "eng_comp_update_attestation": {
-        "approval_criteria": "role:manager",
-        "description": "Manager UPDATE on eng_comp -- requires an admin (carol) to attest",
-        "one_time": true,
-        "time_to_live": 300,
-        "timeout": 300
       }
     }
   },
-  "description": "alice -- role: manager (broader LLM access than bob). Alation: select/update, eng_comp UPDATE attests, DELETE/DDL denied. OpenAI: gpt-4o-mini+gpt-4o, max_tokens<=2000. Anthropic: claude-sonnet-5, max_tokens<=100.",
   "attestations": [
     "eng_comp_update_attestation::{ params.touches_eng_comp == 'true' AND params.stmt_type == 'update' }"
-  ]
+  ],
+  "description": "alice -- role: manager (broader LLM access than alice). Alation: select/update, eng_comp UPDATE attests, DELETE/DDL denied. OpenAI: gpt-4o-mini+gpt-4o, max_tokens<=2000. Anthropic: claude-sonnet-5, max_tokens<=100."
 }

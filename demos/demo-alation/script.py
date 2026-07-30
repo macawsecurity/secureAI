@@ -31,7 +31,7 @@ from macaw_adapters.openai import SecureOpenAI
 from macaw_adapters.mcp import SecureMCPProxy
 from macaw_client import MACAWClient, RemoteIdentityProvider
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "utility"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup"))
 from alation_verifier import AlationSQLGuardVerifier
 
 logging.getLogger("macaw_client").setLevel(logging.ERROR)
