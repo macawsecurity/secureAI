@@ -46,8 +46,8 @@ ENG_COMP = "workspace.macaw_demo.eng_comp"      # Databricks will not resolve a 
 # Alice: gpt-4o-mini/gpt-4o, max 2000 tokens; reads eng_comp freely
 # Bob:   gpt-4o-mini only,   max 100 tokens;  eng_comp needs a manager's attestation
 USER_TESTS = {
-    "alice": {
-        "email": "alice.alation@gmail.com",
+    "bob": {
+        "email": "bob.alation@gmail.com",
         "policy_desc": "gpt-4o-mini/gpt-4o, max 2000 tokens",
         "llm": [
             # (model, max_tokens)
@@ -60,8 +60,8 @@ USER_TESTS = {
             f"SELECT COUNT(*) FROM {ENG_COMP}",                    # ALLOWED
         ],
     },
-    "bob": {
-        "email": "bob.alation@gmail.com",
+    "alice": {
+        "email": "alice.alation@gmail.com",
         "policy_desc": "gpt-4o-mini only, max 100 tokens",
         "llm": [
             ("gpt-4o", 80),             # BLOCKED - model not allowed
