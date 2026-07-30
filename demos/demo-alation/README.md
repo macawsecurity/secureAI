@@ -91,7 +91,6 @@ Each mapped claim becomes the name of a policy to look up:
 |-------|-------|--------|
 | `name_path` → username | `alice` | `user:alice` |
 | `business_unit_path` | `analytics` | `bu:analytics` |
-| `team_path` | `reporting` | `team:reporting` |
 | `organization_path` | `alation-MACAW` | `company:alation-MACAW` |
 | `roles_path` | `["manager"]` | matches `approval_criteria: role:manager` |
 
