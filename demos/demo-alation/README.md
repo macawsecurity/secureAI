@@ -27,7 +27,6 @@ demo-alation/
 ├── Policies/
 │   ├── company.json                # company:alation-MACAW
 │   ├── bu.json                     # bu:analytics
-│   ├── team_reporting.json         # team:reporting
 │   ├── user_alice.json             # user:alice
 │   ├── user_bob.json               # user:bob
 │   └── alation-remote-proxy.json   # app:alation-remote-proxy
@@ -124,10 +123,9 @@ Load each one: Policies → Add Policy → Code Editor → paste JSON → Valida
 |---|---|---|
 | 1 | `Policies/company.json` | `company:alation-MACAW` |
 | 2 | `Policies/bu.json` | `bu:analytics` |
-| 3 | `Policies/team_reporting.json` | `team:reporting` |
-| 4 | `Policies/user_alice.json` | `user:alice` |
-| 5 | `Policies/user_bob.json` | `user:bob` |
-| 6 | `Policies/alation-remote-proxy.json` | `app:alation-remote-proxy` |
+| 3 | `Policies/user_alice.json` | `user:alice` |
+| 4 | `Policies/user_bob.json` | `user:bob` |
+| 5 | `Policies/alation-remote-proxy.json` | `app:alation-remote-proxy` |
 
 #### Policy Hierarchy
 
@@ -136,7 +134,6 @@ The policies demonstrate MACAW's hierarchical policy model:
 ```
 company:alation-MACAW (base restrictions)
     └── bu:analytics (business unit)
-         ├── team:reporting (team level)
               └── user:bob (individual user)
               └── user:alice (individual user)
 

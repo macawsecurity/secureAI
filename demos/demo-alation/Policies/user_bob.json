@@ -10,7 +10,7 @@
     "tool:openai-service/generate",
     "tool:anthropic-service/generate"
   ],
-  "extends": "team:reporting",
+  "extends": "bu:analytics",
   "constraints": {
     "attestations": {
       "eng_comp_update_attestation": {
