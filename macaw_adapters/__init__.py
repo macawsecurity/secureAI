@@ -35,25 +35,21 @@ __all__ = [
     "langchain",
     "litellm",
     "mcp",
+    "pydantic_ai",
     "__version__",
 ]
 
 
 def __getattr__(name):
-    """Lazy import adapters only when accessed."""
-    if name == "openai":
-        from macaw_adapters import openai
-        return openai
-    elif name == "anthropic":
-        from macaw_adapters import anthropic
-        return anthropic
-    elif name == "langchain":
-        from macaw_adapters import langchain
-        return langchain
-    elif name == "litellm":
-        from macaw_adapters import litellm
-        return litellm
-    elif name == "mcp":
-        from macaw_adapters import mcp
-        return mcp
+    """
+    Lazy import adapters only when accessed.
+
+    Imported by full module path: an adapter shares its name with the package it
+    wraps (openai, mcp, pydantic_ai, ...), and `from macaw_adapters import <name>`
+    falls back to this function for those, which recurses.
+    """
+    if name in ("openai", "anthropic", "langchain", "litellm", "mcp", "pydantic_ai"):
+        import importlib
+
+        return importlib.import_module(f"macaw_adapters.{name}")
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
