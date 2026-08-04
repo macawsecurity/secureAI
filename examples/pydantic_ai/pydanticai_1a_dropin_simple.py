@@ -30,7 +30,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 
 from macaw_adapters.pydantic_ai import SecureAgent
 
-APP_NAME = "catalog-agent"
+APP_NAME = "pydantic-agent"
 GENERATE = f"tool:{APP_NAME}/generate"
 
 

@@ -1,0 +1,10 @@
+{
+  "policy_id": "app:pydantic-agent",
+  "description": "Resources used by the Pydantic AI examples. Each example narrows this set with its own intent_policy.",
+  "scope": "global",
+  "version": "1.0",
+  "resources": [
+    "tool:pydantic-agent/generate",
+    "tool:pydantic-agent/*"
+  ]
+}
