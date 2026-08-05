@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
-[![Version](https://img.shields.io/badge/version-0.5.25-green.svg)](https://github.com/macawsecurity/secureAI)
+[![Version](https://img.shields.io/badge/version-0.9.9.6-green.svg)](https://github.com/macawsecurity/secureAI)
 
 **Drop-in replacements for OpenAI, Anthropic, LangChain, MCP, and MCP Proxy (inline gateway) for deterministic policy-based security controls for enterprise apps.**
 
@@ -29,10 +29,12 @@ pip install macaw-adapters[all]
 
 # Or install specific adapters only
 pip install macaw-adapters[openai]
-pip install macaw-adapters[anthropic]
+pip install macaw-adapters[claude]         # Anthropic SDK
 pip install macaw-adapters[langchain]
+pip install macaw-adapters[pydantic-ai]
+pip install macaw-adapters[litellm]        # 100+ providers
 pip install macaw-adapters[mcp]
-pip install macaw-adapters[mcp-proxy]  # For external MCP servers
+pip install macaw-adapters[mcp-proxy]      # For external MCP servers
 ```
 
 **From source:**
@@ -135,6 +137,51 @@ llm = ChatOpenAI(model="gpt-4")
 response = llm.invoke("Hello!")
 ```
 
+### SecurePydanticAI
+
+Drop-in replacement for Pydantic AI's `Agent`. Model calls and tool calls both
+become MACAW resources:
+
+```python
+# Before
+from pydantic_ai import Agent
+agent = Agent(OpenAIChatModel("gpt-4o-mini"), tools=[query_catalog])
+
+# After
+from macaw_adapters.pydantic_ai import SecureAgent
+agent = SecureAgent(
+    OpenAIChatModel("gpt-4o-mini"),
+    app_name="catalog-agent",
+    tools=[query_catalog],
+)
+
+result = agent.run_sync("Which tables contain PII?")
+```
+
+Every way Pydantic AI accepts tools is governed - `tools=`, `@agent.tool`,
+`FunctionToolset`, and `MCPToolset`. Policy can also gate which model a router
+such as `FallbackModel` may use, and refuse provider-side tools like web search
+before the provider is called.
+
+Install with: `pip install macaw-adapters[pydantic-ai]`
+
+### SecureLiteLLM
+
+```python
+# Before
+import litellm
+
+# After
+from macaw_adapters import litellm
+
+response = litellm.completion(
+    model="groq/llama3-70b-8192",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+```
+
+Install with: `pip install macaw-adapters[litellm]`
+
 ## Multi-User Support
 
 For SaaS applications with per-user policies:
@@ -197,7 +244,7 @@ response = user_openai.chat.completions.create(...)
 ## Requirements
 
 - **Python 3.9+**
-- **macaw_client v0.5.25+** - The MACAW client library (download from console)
+- **macaw_client v0.9.9+** - The MACAW client library (download from console)
 
 ### Getting Started
 
@@ -215,6 +262,8 @@ response = user_openai.chat.completions.create(...)
 | SecureMCP | `macaw_adapters.mcp` | Your MCP servers (FastMCP-compatible) |
 | SecureMCPProxy | `macaw_adapters.mcp` | External MCP servers (inline gateway) |
 | LangChain | `macaw_adapters.langchain` | LangChain (OpenAI, Anthropic, Agents) |
+| SecurePydanticAI | `macaw_adapters.pydantic_ai` | Pydantic AI agents (models + tools) |
+| SecureLiteLLM | `macaw_adapters.litellm` | LiteLLM (100+ providers) |
 
 ## Examples
 
@@ -223,7 +272,10 @@ See the [examples/](examples/) directory for complete working examples:
 - `examples/openai/` - OpenAI adapter examples
 - `examples/anthropic/` - Anthropic adapter examples
 - `examples/langchain/` - LangChain integration examples
-- `examples/mcp/` - MCP server and client examples
+- `examples/pydantic_ai/` - Pydantic AI agent examples
+- `examples/litellm/` - LiteLLM multi-provider examples
+- `examples/mcp/` - MCP server, client, and proxy examples
+- `examples/attestations/` - Human-in-the-loop approval examples
 
 ## Console Dev Hub
 
@@ -250,12 +302,18 @@ Console > Dev Hub
 │   │   ├── Elicitation
 │   │   ├── Roots
 │   │   └── MCP Proxy (Inline Gateway for External MCP)
-│   └── LangChain
-│       ├── Drop-in Agents
-│       ├── Multi-user Permissions
-│       ├── Agent Orchestration
-│       ├── LLM Wrappers (OpenAI, Anthropic)
-│       └── Memory Integration
+│   ├── LangChain
+│   │   ├── Drop-in Agents
+│   │   ├── Multi-user Permissions
+│   │   ├── Agent Orchestration
+│   │   ├── LLM Wrappers (OpenAI, Anthropic)
+│   │   └── Memory Integration
+│   └── Pydantic AI
+│       ├── Drop-in Simple
+│       ├── Model Routing (policy-driven fallback)
+│       ├── Provider-Side Tools
+│       ├── Multi-User Bind
+│       └── MCP Compose
 └── Reference
     ├── MACAW Client SDK
     ├── Adapter APIs
