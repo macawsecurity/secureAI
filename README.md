@@ -276,6 +276,7 @@ See the [examples/](examples/) directory for complete working examples:
 - `examples/litellm/` - LiteLLM multi-provider examples
 - `examples/mcp/` - MCP server, client, and proxy examples
 - `examples/attestations/` - Human-in-the-loop approval examples
+- `examples/phishing-resistance/` - Login-strength gating (passkey/amr) examples
 
 ## Console Dev Hub
 

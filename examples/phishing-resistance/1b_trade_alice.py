@@ -1,29 +1,43 @@
 #!/usr/bin/env python3
 """
-1a_trade_alice.py - External Attestation Trade Request
+1b_trade_alice.py - Phishing-Resistance as a precondition to human approval
 
-Alice wants to execute a high-value trade ($15,000).
-Policy requires manager approval via external attestation for amounts > $10,000.
+This builds on the alice/bob trade example (examples/attestations/) by
+LAYERING two gates on the same trade:
 
-This demonstrates:
-- Conditional attestations: only required when amount > 10000
-- Blocking flow: request waits for approval
-- Role-based approval: only users with role:manager can approve
+  1. phishing_resistant  - internal, decided at login from the token's amr.
+                           Deny-if-absent, no approver, checked FIRST.
+  2. trade-approved      - external HITL, blocks waiting for a manager (bob),
+                           only required when amount > $10,000.
 
-NOTE: This example requires interactive approval and is not suitable
-for automated test harnesses.
+Two run outcomes, driven only by how Alice logged in (via get_token.py):
+
+  PASSKEY  -> clears phishing_resistant -> BLOCKS on trade-approved
+              -> bob approves (1b_trade_bob.py) -> trade executes.
+  PASSWORD -> DENIED at phishing_resistant. The trade never reaches the
+              manager gate; bob is never involved.
+
+Start simple with 1a_login_alice.py (phishing-resistance alone); this
+example shows how it composes with a human approval step.
+
+NOTE: interactive — the passkey run needs bob to approve. Not for
+automated test harnesses.
 
 Prerequisites:
-    - MACAW SDK installed (pip install macaw-client macaw-adapters)
-    - Identity Provider configured (Console -> Settings -> Identity Bridge)
-    - Test users: alice/Alice123!, bob/Bob@123! (bob needs manager role)
+    - MACAW control plane running (LocalAgent)
+    - Entra connector configured (Console -> Settings -> Identity Bridge),
+      an Entra user with a passkey, and a token from get_token.py
+    - bob configured as an approver with role:manager (see attestations/ demo)
 
 Run:
-    # Terminal 1: Run Alice's trade request (will block waiting)
-    python 1a_trade_alice.py
+    python get_token.py                       # sign in with a PASSKEY
+    export ALICE_TOKEN=$(cat ~/.macaw_demo_token)
 
-    # Terminal 2: Run Bob's approval
-    python 1a_trade_bob.py
+    # Terminal 1: Alice's trade (clears phishing gate, then blocks on approval)
+    python 1b_trade_alice.py
+
+    # Terminal 2: Bob approves
+    python 1b_trade_bob.py
 """
 
 import json
@@ -60,7 +74,7 @@ def execute_trade_handler(params):
 
 def main():
     print("=" * 60)
-    print("Example 1a: External Attestation - Trade Request (Alice)")
+    print("Example 1b: Phishing-Resistance + Trade Approval (Alice)")
     print("=" * 60)
 
     # Step 1: Create Trading Service (provides execute_trade tool)
@@ -164,7 +178,7 @@ def main():
     print(f"  Attestation: 'trade-approved' requires role:manager")
     print(f"\n  Creating PENDING attestation and BLOCKING...")
     print(f"  Bob has 5 minutes (timeout=300s) to approve.")
-    print(f"\n  >>> Run 1a_trade_bob.py in another terminal <<<")
+    print(f"\n  >>> Run 1b_trade_bob.py in another terminal <<<")
     print("-" * 60)
 
     try:
@@ -192,7 +206,7 @@ def main():
             print("=" * 60)
             print(f"\nError: {error_msg}")
             print(f"\nTo approve, Bob should run:")
-            print(f"  python 1a_trade_bob.py")
+            print(f"  python 1b_trade_bob.py")
         else:
             print(f"\n  ERROR: {e}")
 

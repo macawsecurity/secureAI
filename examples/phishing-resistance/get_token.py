@@ -28,8 +28,9 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # ---- CONFIG (edit these, or set the env vars) ------------------------------
-TENANT_ID = os.environ.get("ENTRA_TENANT_ID", "3d2a17ab-1d4a-4fc9-a156-b31a28ef473c")
-CLIENT_ID = os.environ.get("ENTRA_CLIENT_ID", "84d9060c-25a0-4c9c-a6fc-48ebb487f761")
+# Your Entra app registration's directory (tenant) ID and application (client) ID.
+TENANT_ID = os.environ.get("ENTRA_TENANT_ID", "YOUR_ENTRA_TENANT_ID")
+CLIENT_ID = os.environ.get("ENTRA_CLIENT_ID", "YOUR_ENTRA_CLIENT_ID")
 PORT = 8400
 # ----------------------------------------------------------------------------
 

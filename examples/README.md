@@ -136,6 +136,19 @@ Human-in-the-loop approval workflows for sensitive operations. Request blocks un
 
 **Two-terminal pattern**: Run the requester script first, then run the approver script in another terminal while the requester waits.
 
+### Phishing-Resistance (`phishing-resistance/`)
+
+Login-strength gating. A tool runs only if the human logged in with a phishing-resistant method (passkey / hardware key). Decided by the control plane at login from the token's `amr` — no human in the loop.
+
+| Example | Description |
+|---------|-------------|
+| `1a_login_alice.py` | Alice alone: a `phishing_resistant`-gated tool. Passkey → allowed, password → denied |
+| `1b_trade_alice.py` | Requester: layers `phishing_resistant` in front of the trade approval |
+| `1b_trade_bob.py` | Approver: manager approves the trade (once the phishing gate is cleared) |
+| `get_token.py` | Signs in to Entra and mints an id_token carrying `amr` (passkey vs password) |
+
+**Progression**: Start with 1a for the pure concept (run it twice — passkey vs password). Use 1b to see it composed as a precondition to a human approval (builds on `attestations/`).
+
 ## Running the Examples
 
 ### Prerequisites

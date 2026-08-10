@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-1a_trade_bob.py - External Attestation Manager Approval
+1b_trade_bob.py - External Attestation Manager Approval
 
 Bob reviews and approves/denies pending attestation requests.
 Alice's trade request is BLOCKING, waiting for Bob's approval.
@@ -17,14 +17,14 @@ Prerequisites:
     - MACAW SDK installed (pip install macaw-client macaw-adapters)
     - Identity Provider configured (Console -> Settings -> Identity Bridge)
     - Test users: alice/Alice123!, bob/Bob@123! (bob needs manager role)
-    - Alice has already requested a trade (1a_trade_alice.py running)
+    - Alice has already requested a trade (1b_trade_alice.py running)
 
 Run:
     # Terminal 1: Run Alice's trade request first
-    python 1a_trade_alice.py
+    python 1b_trade_alice.py
 
     # Terminal 2: Run Bob's approval
-    python 1a_trade_bob.py
+    python 1b_trade_bob.py
 """
 
 import json
@@ -34,7 +34,7 @@ from macaw_client import MACAWClient, RemoteIdentityProvider
 
 def main():
     print("=" * 60)
-    print("Example 1a: External Attestation - Manager Approval (Bob)")
+    print("Example 1b: External Attestation - Manager Approval (Bob)")
     print("=" * 60)
 
     # Step 1: Authenticate as Bob
@@ -87,7 +87,7 @@ def main():
     if not attestations:
         print("  No pending attestations found.")
         print("\n  Make sure Alice has requested a trade first:")
-        print("    python 1a_trade_alice.py")
+        print("    python 1b_trade_alice.py")
         bob.unregister()
         return 0
 
