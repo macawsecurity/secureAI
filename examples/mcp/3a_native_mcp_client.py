@@ -34,6 +34,16 @@ from mcp.client.stdio import stdio_client
 SERVER = Path(__file__).parent / "securemcp_calculator.py"
 
 
+def field(obj, *names):
+    """Read an SDK field by whichever name this mcp version uses.
+
+    MCP 2026-07-28 renamed result fields from camelCase to snake_case
+    (serverInfo -> server_info). A real client targets one SDK and just uses
+    that spelling; this example runs against both.
+    """
+    return next((getattr(obj, n) for n in names if hasattr(obj, n)), None)
+
+
 async def main() -> int:
     print("=" * 60)
     print("Vanilla MCP client -> SecureMCP calculator")
@@ -49,14 +59,16 @@ async def main() -> int:
 
             # 1. Handshake
             init = await session.initialize()
-            print(f"\nConnected to: {init.serverInfo.name} v{init.serverInfo.version}")
-            print(f"Protocol: {init.protocolVersion}")
+            info = field(init, "server_info", "serverInfo")
+            print(f"\nConnected to: {info.name} v{info.version}")
+            print(f"Protocol: {field(init, 'protocol_version', 'protocolVersion')}")
 
             # 2. Discovery - comes straight off the MACAW tool registry
             listed = await session.list_tools()
             print(f"\nDiscovered {len(listed.tools)} tools:")
             for tool in listed.tools:
-                required = tool.inputSchema.get("required", [])
+                schema = field(tool, "input_schema", "inputSchema") or {}
+                required = schema.get("required", [])
                 print(f"  - {tool.name}({', '.join(required)}): {tool.description}")
 
             # 3. Call tools - each one goes through the MACAW PEP

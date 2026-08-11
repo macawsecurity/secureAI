@@ -35,6 +35,17 @@ from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+
+def field(obj, *names):
+    """Read an SDK field by whichever name this mcp version uses.
+
+    MCP 2026-07-28 renamed result fields from camelCase to snake_case
+    (serverInfo -> server_info). A real client targets one SDK and just uses
+    that spelling; this example runs against both.
+    """
+    return next((getattr(obj, n) for n in names if hasattr(obj, n)), None)
+
+
 APP_NAME = "fetch-test"
 
 # The proxy process this client spawns. Two lines of real code:
@@ -61,14 +72,15 @@ async def main() -> int:
         async with ClientSession(read_stream, write_stream) as session:
 
             init = await session.initialize()
-            print(f"\nConnected to: {init.serverInfo.name}")
+            print(f"\nConnected to: {field(init, 'server_info', 'serverInfo').name}")
 
             # Discovery passes upstream's schema through untouched - the proxy
             # never had to know what a "fetch" tool looks like.
             listed = await session.list_tools()
             print(f"\nDiscovered {len(listed.tools)} tools (schemas from upstream):")
             for tool in listed.tools:
-                props = list((tool.inputSchema or {}).get("properties", {}).keys())
+                schema = field(tool, "input_schema", "inputSchema") or {}
+                props = list(schema.get("properties", {}).keys())
                 print(f"  - {tool.name}({', '.join(props)})")
                 print(f"    {(tool.description or '')[:70]}...")
 

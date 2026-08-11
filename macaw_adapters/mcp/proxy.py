@@ -49,6 +49,20 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 
+def _tool_schema(tool) -> dict:
+    """Input schema of an upstream tool.
+
+    mcp>=2 renamed Tool.inputSchema to Tool.input_schema. Reading the wrong one
+    yields no error, just an empty schema - and an empty schema means the proxy
+    registers the tool with no parameter constraints for policy to bind to.
+    """
+    return (
+        getattr(tool, "input_schema", None)
+        or getattr(tool, "inputSchema", None)
+        or {}
+    )
+
+
 @dataclass
 class UpstreamAuth:
     """Authentication configuration for upstream MCP server."""
@@ -170,10 +184,15 @@ class SecureMCPProxy:
         http_client = self._create_http_client()
 
         try:
+            # mcp<2 yields (read, write, get_session_id); mcp>=2 yields (read, write)
+            # because protocol sessions were removed in 2026-07-28. Index instead of
+            # unpacking so one call site works on both - the session id getter was
+            # already discarded.
             async with streamable_http_client(
                 self.upstream_url,
                 http_client=http_client
-            ) as (read_stream, write_stream, _):
+            ) as streams:
+                read_stream, write_stream = streams[0], streams[1]
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
 
@@ -184,7 +203,7 @@ class SecureMCPProxy:
                         self.tool_schemas[tool.name] = {
                             "name": tool.name,
                             "description": tool.description or f"Tool: {tool.name}",
-                            "schema": tool.inputSchema if hasattr(tool, 'inputSchema') else {}
+                            "schema": _tool_schema(tool)
                         }
 
             self._connected = True
@@ -221,16 +240,23 @@ class SecureMCPProxy:
                     self.tool_schemas[tool.name] = {
                         "name": tool.name,
                         "description": tool.description or f"Tool: {tool.name}",
-                        "schema": tool.inputSchema if hasattr(tool, 'inputSchema') else {}
+                        "schema": _tool_schema(tool)
                     }
 
         self._connected = True
         logger.info(f"Discovered {len(self.tool_schemas)} tools via stdio")
 
     def _create_http_client(self):
-        """Create httpx client with authentication headers."""
+        """Create httpx client with authentication headers.
+
+        mcp>=2 is built on httpx2 and type-checks the client it is handed, so the
+        client has to come from the same library the installed SDK uses.
+        """
         try:
-            import httpx
+            try:
+                import httpx2 as httpx  # mcp>=2
+            except ImportError:
+                import httpx  # mcp<2
         except ImportError:
             raise ImportError(
                 "httpx not installed. Install with: pip install macaw-adapters[mcp-proxy]"
@@ -338,10 +364,12 @@ class SecureMCPProxy:
         http_client = self._create_http_client()
 
         try:
+            # See _async_discover_tools_http() for why this is indexed, not unpacked.
             async with streamable_http_client(
                 self.upstream_url,
                 http_client=http_client
-            ) as (read_stream, write_stream, _):
+            ) as streams:
+                read_stream, write_stream = streams[0], streams[1]
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
                     result = await session.call_tool(tool_name, params)
@@ -483,7 +511,7 @@ class SecureMCPProxy:
                        independent of the transport used to reach upstream)
             port: Bind port for transport="http"
         """
-        from ._endpoint import serve
+        from ._serve import serve
 
         asyncio.run(
             serve(

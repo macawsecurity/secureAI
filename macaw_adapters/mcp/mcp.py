@@ -552,7 +552,7 @@ class SecureMCP:
                 while True:
                     await asyncio.sleep(1)
             else:
-                from ._endpoint import serve
+                from ._serve import serve
                 await serve(
                     self.name,
                     self.version,

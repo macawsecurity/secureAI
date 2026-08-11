@@ -38,9 +38,9 @@ langchain = [
     "langchain-openai>=0.0.5",
     "langchain-anthropic>=0.1.0",
 ]
-mcp = ["mcp>=1.0.0"]
+mcp = ["mcp>=1.0.0,<3"]
 mcp-proxy = [
-    "mcp>=1.0.0",
+    "mcp>=1.0.0,<3",
     "httpx>=0.24.0",
 ]
 litellm = ["litellm>=1.0.0"]
@@ -52,7 +52,7 @@ all = [
     "langchain-openai>=0.0.5",
     "langchain-anthropic>=0.1.0",
     "litellm>=1.0.0",
-    "mcp>=1.0.0",
+    "mcp>=1.0.0,<3",
     "httpx>=0.24.0",
     "pydantic-ai>=2.22,<3",
 ]

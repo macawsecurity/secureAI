@@ -48,17 +48,29 @@ from pathlib import Path
 import anthropic
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from mcp.shared.context import RequestContext
 import mcp.types as types
 
 SERVER = Path(__file__).parent / "1e_sampling_server.py"
 MODEL = "claude-opus-4-8"
 
+
+def field(obj, *names):
+    """Read an SDK field by whichever name this mcp version uses.
+
+    MCP 2026-07-28 renamed result fields from camelCase to snake_case
+    (serverInfo -> server_info). A real client targets one SDK and just uses
+    that spelling; this example runs against both.
+    """
+    return next((getattr(obj, n) for n in names if hasattr(obj, n)), None)
+
 llm = anthropic.Anthropic()
 
 
 async def sampling_callback(
-    context: RequestContext,
+    # The callback shape is (context, params) on every mcp version; only the
+    # context type moved (RequestContext on mcp<2, ClientRequestContext on
+    # mcp>=2), and it is unused here, so it is left unannotated.
+    context,
     params: types.CreateMessageRequestParams,
 ) -> types.CreateMessageResult | types.ErrorData:
     """Serve the server's ctx.sample() request using THIS client's LLM.
@@ -75,8 +87,9 @@ async def sampling_callback(
     def call(**extra):
         return llm.messages.create(
             model=MODEL,
-            max_tokens=params.maxTokens,
-            system=params.systemPrompt or "You are a helpful assistant.",
+            max_tokens=field(params, "max_tokens", "maxTokens"),
+            system=field(params, "system_prompt", "systemPrompt")
+            or "You are a helpful assistant.",
             messages=[{"role": "user", "content": prompt}],
             **extra,
         )
@@ -121,7 +134,7 @@ async def main() -> int:
             read_stream, write_stream, sampling_callback=sampling_callback
         ) as session:
             init = await session.initialize()
-            print(f"\nConnected to: {init.serverInfo.name}")
+            print(f"\nConnected to: {field(init, 'server_info', 'serverInfo').name}")
 
             listed = await session.list_tools()
             print(f"Tools: {[t.name for t in listed.tools]}\n")
