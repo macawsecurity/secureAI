@@ -1,0 +1,17 @@
+{
+  "policy_id": "company:alation-MACAW",
+  "version": "1.0.1",
+  "scope": "global",
+  "resources": [
+    "tool:**",
+    "llm:**",
+    "agent:**"
+  ],
+  "denied_resources": [
+    "data:sensitive/*"
+  ],
+  "constraints": {
+    "rate_limit": 100
+  },
+  "description": "My security policy"
+}
