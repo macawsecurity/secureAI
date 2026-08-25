@@ -270,7 +270,13 @@ class SecureMCPProxy:
             header_name = self.upstream_auth.header_name or "X-API-Key"
             headers[header_name] = self.upstream_auth.api_key
 
-        return httpx.AsyncClient(headers=headers) if headers else None
+        # Always return a client, even without auth headers: httpx defaults to a
+        # 5s read timeout, which any upstream tool that calls an LLM will exceed.
+        # Letting the MCP SDK build its own client would reinstate that default.
+        return httpx.AsyncClient(
+            headers=headers or None,
+            timeout=httpx.Timeout(connect=30, read=300, write=30, pool=30),
+        )
 
     def _setup_macaw_client(self, iam_token: Optional[str], user_name: Optional[str]):
         """
