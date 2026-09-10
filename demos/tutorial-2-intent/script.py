@@ -105,23 +105,7 @@ def verdict_for(error: Exception) -> str:
     return f"ERROR - {str(error)[:70]}"
 
 
-def patch_proxy_timeout():
-    """Tune the upstream HTTP client for Alation's long-running agent endpoint.
 
-    httpx ships a 5s default that suits short request/response APIs. Here we widen the
-    read timeout to 300s for this upstream while keeping connect, write and pool tight,
-    so long analytical calls complete without loosening anything else.
-    """
-    def create_http_client(self):
-        auth = self.upstream_auth
-        headers = ({"Authorization": f"Bearer {auth.token}"}
-                   if getattr(auth, "type", None) == "bearer" and getattr(auth, "token", None)
-                   else {})
-        return httpx.AsyncClient(
-            headers=headers or None,
-            timeout=httpx.Timeout(connect=30, read=300, write=30, pool=30),
-        )
-    SecureMCPProxy._create_http_client = create_http_client
 
 
 def test_user(username: str, openai_service: SecureOpenAI, proxy: SecureMCPProxy):
@@ -170,7 +154,7 @@ def test_user(username: str, openai_service: SecureOpenAI, proxy: SecureMCPProxy
 def main():
     openai_service = SecureOpenAI(api_key=get_env("OPENAI_API_KEY"), app_name="openai-service")
 
-    patch_proxy_timeout()
+    
     proxy = SecureMCPProxy(
         app_name="alation-remote-proxy",
         upstream_url=get_env("ALATION_MCP_URL"),
