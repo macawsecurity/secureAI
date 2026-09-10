@@ -14,7 +14,7 @@
         "timeout": 300
       }
     },
-    "tool:alation/run_query_sql_ii": {
+    "tool:alation/<your-custom-agent-tool-name>": {
       "attestations": [
         "alation:{params.data_product_id}"
       ]

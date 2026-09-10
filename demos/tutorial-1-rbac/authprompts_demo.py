@@ -95,8 +95,7 @@ def test_user_path1(username: str, openai_service: SecureOpenAI):
         print(f"\n   -> {model} with {max_tokens} tokens ({expected})")
 
         try:
-            # A2A call to single service agent
-            # invoke_tool auto-creates authenticated prompts!
+   
             result = user.invoke_tool(
                 tool_name=f"tool:{openai_service.app_name}/generate",
                 parameters={

@@ -1,30 +1,27 @@
 # Tutorial 3: Object-Based Access Control
 
-This tutorial demonstrates object-based access controls, where the policy that applies to a request
-is chosen by the Alation catalog object the request touches. Controls are specified through MAPL
-policies enforced by the MACAW runtime invisbly. The Alation tools are accessed by Claude Code. We
-use Alation as the contextual data layer and Databricks as the backend lakehouse. All these
-components are replaceable modularly.
+This tutorial demonstrates object-based access controls. Object Policies provide policy enforcement for resources/object
+that are being used at runtime. Controls are specified through MAPL policies enforced by the MACAW runtime
+invisbly. The Alation tools are accessed by Claude Code. We use Alation as the contextual data layer
+and Databricks as the backend lakehouse. All these components are replaceable modularly.
 
-## Overview
+## Attaching a Policy to a Thing
 
-The demo shows how a request is gated by the object it names, not just by who asks. The app policy
-carries a dynamic object reference, `alation:{params.data_product_id}`, and MACAW resolves it at
-request time:
 
-- If a policy for that data product exists, it is used, and it **extends** the data source policy
-  `alation:databricks` (intersection — the data product can only narrow what the data source allows).
-- If no policy for that data product exists, resolution **falls back** to `alation:base`, which
-  requires an admin attestation before anything runs.
+Object policies attach the rules to the thing itself. MAPL enforces them whenever a tool consumes it.
+Here the thing is the data product a SQL query names. The app policy carries the object reference
+`alation:{params.data_product_id}`, and MACAW resolves it at request time:
 
-The same tool call therefore resolves to a different effective policy depending on which catalog
-object it names.
+- If a policy for that data product exists, it is used, and it extends the data source policy
+  `alation:databricks`. The data product can only narrow what the data source allows.
+- If no policy for that data product exists, it falls back to `alation:base`, which requires an admin
+  attestation before anything runs.
 
 | Object | Policy | Effect |
 |--------|--------|--------|
 | Data source (Databricks) | `alation:databricks` | which SQL tools may run against the data source |
-| Data product | `alation:<your-data_product_id>` | extends `alation:databricks`; allows a set of tables, denies `eng_comp` |
-| *(no data product policy)* | `alation:base` (fallback) | `admin_approval_required` |
+| Data product | `alation:<your-data_product_id>` | extends `alation:databricks`, allows a set of tables, denies `eng_comp` |
+| no data product policy | `alation:base` (fallback) | `admin_approval_required` |
 
 ## Directory Structure
 
