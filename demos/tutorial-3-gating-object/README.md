@@ -84,7 +84,7 @@ pip install sqlglot
 
 
 
-### 4. Get the Alation Token
+### 3. Get the Alation Token
 
 To get alation token run, `utility/get_token.py`
 
@@ -101,7 +101,7 @@ browser again.
 python utility/get_token.py --refresh <REFRESH_TOKEN>
 ```
 
-### 5. Load Policies
+### 4. Load Policies
 
 Import the policies from the `Policy/` directory into your MACAW workspace via the Console.
 Load each one: Policies → Add Policy → Code Editor → paste JSON → Validate → Save.
@@ -135,22 +135,19 @@ app:alation
 
 A data product policy can only restrict, never expand, what `alation:databricks` allows.
 
-### 6. Register the Proxy
+### 5. Register the Proxy
 
 `script.py` fronts the Alation MCP with a `SecureMCPProxy` and adds the verifier. Register it as a
-stdio MCP server. Nothing is hardcoded — every value is read from your own environment.
+stdio MCP server. Fill in the four placeholders below with your own values — everything lives inside
+the one command.
 
 ```bash
-export MACAW_HOME="<path to macaw-client-0.9.9.6-Linux-x86_64-py3.12>"
-export ALATION_MCP_URL="https://<tenant>.alationcloud.com/ai/mcp/<uuid>"
-export ALATION_TOKEN="<fresh bearer>"    # from utility/get_token.py
-
 claude mcp add alation-databricks --scope user \
-  -- bash -lc 'source "$MACAW_HOME"/venv/bin/activate && \
-     export MACAW_HOME="'"$MACAW_HOME"'" && \
-     export ALATION_MCP_URL="'"$ALATION_MCP_URL"'" && \
-     export ALATION_TOKEN="'"$ALATION_TOKEN"'" && \
-     cd "'"$PWD"'" && \
+  -- bash -lc 'source <path to venv>/bin/activate && \
+     export MACAW_HOME="<path to macaw-client-0.9.9.6-Linux-x86_64-py3.12>" && \
+     export ALATION_MCP_URL="https://<tenant>.alationcloud.com/ai/mcp/<uuid>" && \
+     export ALATION_TOKEN="<fresh bearer>" && \
+     cd <path to tutorial-3-gating-object> && \
      python script.py stdio'
 ```
 
