@@ -146,6 +146,7 @@ claude mcp add alation-databricks --scope user \
   -- bash -lc 'source <path to venv>/bin/activate && \
      export MACAW_HOME="<path to macaw-client-0.9.9.6-Linux-x86_64-py3.12>" && \
      export ALATION_MCP_URL="https://<tenant>.alationcloud.com/ai/mcp/<uuid>" && \
+     export ALATION_BASE_URL= "<your-alation-tenant>" && \
      export ALATION_TOKEN="<fresh bearer>" && \
      cd <path to tutorial-3-gating-object> && \
      python script.py stdio'
