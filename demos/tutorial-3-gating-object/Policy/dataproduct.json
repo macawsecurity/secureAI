@@ -1,0 +1,27 @@
+{
+  "policy_id": "alation:<your-data_product_id>",
+  "version": "1.0.7",
+  "scope": "global",
+  "resources": [
+    "tool:alation/<your-custom-agent-tool-name>"
+  ],
+  "extends": "alation:databricks",
+  "constraints": {
+    "denied_parameters":{
+        "tool:alation/<your-custom-agent-tool-name>": {
+        "sql": [
+          "*eng_comp*"
+        ]
+      }
+    },
+    "parameters": {
+      "tool:alation/<your-custom-agent-tool-name>": {
+        "sql": {
+          "pattern": "[\\s\\S]*(customer|finance|engineering|sales_)[\\s\\S]*",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "description": "Policy for data product, denies any look up for table eng_comp in dataSource, while allowing a set of tables  "
+}

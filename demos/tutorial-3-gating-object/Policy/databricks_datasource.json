@@ -1,0 +1,28 @@
+{
+  "policy_id": "alation:databricks",
+  "version": "1.0.6",
+  "scope": "global",
+  "resources": [
+    "tool:alation/<your-custom-agent-tool-name>",
+    "tool:alation/sql_execution_tool"
+  ],
+  "constraints": {
+    "parameters": {
+      "tool:alation/<your-custom-agent-tool-name>": {
+        "stmt_type": {
+          "allowed_values": [
+            "select"
+          ]
+        }
+      },
+      "tool:alation/sql_execution_tool": {
+        "stmt_type": {
+          "allowed_values": [
+            "select"
+          ]
+        }
+      }
+    }
+  },
+  "description": "Databricks SQL floor -- read-only (select) on the SQL tools"
+}

@@ -1,0 +1,24 @@
+{
+  "policy_id": "app:alation",
+  "version": "0.8.19",
+  "scope": "global",
+  "resources": [
+    "tool:alation/**"
+  ],
+  "constraints": {
+    "attestations": {
+      "admin_approval_required": {
+        "approval_criteria": "role:admin",
+        "one_time": true,
+        "time_to_live": 300,
+        "timeout": 300
+      }
+    },
+    "tool:alation/run_query_sql_ii": {
+      "attestations": [
+        "alation:{params.data_product_id}"
+      ]
+    }
+  },
+  "description": "Policy for Alation MCP"
+}

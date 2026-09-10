@@ -1,0 +1,12 @@
+{
+  "policy_id": "alation:base",
+  "version": "1.0.4",
+  "scope": "global",
+  "resources": [
+    "tool:alation/**"
+  ],
+  "attestations": [
+    "admin_approval_required"
+  ],
+  "description": "Default floor for every data object without its own policy"
+}
