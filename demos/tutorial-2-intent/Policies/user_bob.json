@@ -3,10 +3,7 @@
   "version": "0.3.5",
   "scope": "global",
   "resources": [
-    "tool:alation-remote-proxy/run_query_sql_custom_adi",
-    "tool:alation-remote-proxy/run_data_product_query_macaw_ii",
-    "tool:alation-remote-proxy/run_analytics_agent_macaw",
-    "tool:alation-remote-proxy/run_generate_pdf_from_a_chat_macaw",
+    "tool:alation-remote-proxy/<your-custom-agent-tool-name>",
     "tool:openai-service/generate",
     "tool:anthropic-service/generate"
   ],
@@ -22,25 +19,7 @@
       }
     },
     "parameters": {
-      "tool:alation-remote-proxy/run_analytics_agent_macaw": {
-        "stmt_type": {
-          "allowed_values": [
-            "select",
-            "update"
-          ],
-          "type": "string"
-        }
-      },
-      "tool:alation-remote-proxy/run_data_product_query_macaw_ii": {
-        "stmt_type": {
-          "allowed_values": [
-            "select",
-            "update"
-          ],
-          "type": "string"
-        }
-      },
-      "tool:alation-remote-proxy/run_query_sql_custom_adi": {
+      "tool:alation-remote-proxy/<your-custom-agent-tool-name>": {
         "stmt_type": {
           "allowed_values": [
             "select",
@@ -79,5 +58,5 @@
   "attestations": [
     "eng_comp_update_attestation::{ params.touches_eng_comp == 'true' AND params.stmt_type == 'update' }"
   ],
-  "description": "alice -- role: manager (broader LLM access than alice). Alation: select/update, eng_comp UPDATE attests, DELETE/DDL denied. OpenAI: gpt-4o-mini+gpt-4o, max_tokens<=2000. Anthropic: claude-sonnet-5, max_tokens<=100."
+  "description": "bob -- role: manager "
 }

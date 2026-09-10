@@ -3,7 +3,7 @@
   "version": "0.6.1",
   "scope": "global",
   "resources": [
-    "tool:alation-remote-proxy/run_query_sql_custom_adi",
+    "tool:alation-remote-proxy/<your-custom-agent-tool-name>",
     "tool:openai-service/generate"
   ],
   "extends": "bu:analytics",
@@ -18,7 +18,7 @@
       }
     },
     "parameters": {
-      "tool:alation-remote-proxy/run_query_sql_custom_adi": {
+      "tool:alation-remote-proxy/<your-custom-agent-tool-name>": {
         "stmt_type": {
           "allowed_values": [
             "select",
@@ -44,5 +44,5 @@
   "attestations": [
     "eng_comp_attestation::{ params.touches_eng_comp == 'true' }"
   ],
-  "description": "bob -- role: analyst (narrower LLM access than bob). Any statement touching eng_comp attests to a manager; other tables ungated within the select/update allow-list; DELETE/DDL denied. OpenAI: gpt-4o-mini only, max_tokens<=100."
+  "description": "alice -- role: analyst "
 }

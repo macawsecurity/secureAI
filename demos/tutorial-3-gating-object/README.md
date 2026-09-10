@@ -106,10 +106,14 @@ python utility/get_token.py --refresh <REFRESH_TOKEN>
 Import the policies from the `Policy/` directory into your MACAW workspace via the Console.
 Load each one: Policies → Add Policy → Code Editor → paste JSON → Validate → Save.
 
-Before loading, replace the placeholders with your own values:
+Before loading, replace the placeholders with your own values. The policies guard a single Alation
+agent tool that takes a `sql` parameter, which the verifier stamps `stmt_type` on. You must have
+created that tool in Alation (see Platform setup) before the policies mean anything.
 
-- `<your-data_product_id>` → the data product id you query (the policy id becomes `alation:<that id>`)
-- `<your-custom-agent-tool-name>` → the name of your published Alation agent SQL tool
+- `<your-custom-agent-tool-name>` → the name of the custom agent tool you created in Alation. Replace
+  it in `databricks_datasource.json` and `dataproduct.json`.
+- `<your-data_product_id>` → the data product id you query (the policy id becomes `alation:<that id>`).
+  Replace it in `dataproduct.json`.
 
 | # | File | Policy id |
 |---|---|---|

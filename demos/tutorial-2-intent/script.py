@@ -11,7 +11,7 @@ Prerequisites:
     - MACAW SDK installed (pip install macaw-client macaw-adapters)
     - Identity Provider configured (Console -> Settings -> Identity Bridge)
     - Policies loaded in the Console (see Policies/)
-    - Test users: alice.alation@gmail.com, bob.alation@gmail.com
+    - Test users: alice, bob (each with their own IdP password)
 
 Run:
     export MACAW_HOME=.../macaw-client-0.9.9.6-Linux-x86_64-py3.12
@@ -36,18 +36,15 @@ from alation_verifier import AlationSQLGuardVerifier
 
 logging.getLogger("macaw_client").setLevel(logging.ERROR)
 
-PASSWORD = "test@123"
 PROMPT = "What is compound interest? Answer in one short sentence."
-DATA_PRODUCT = "databricks-macaw-product"
-ENG_COMP = "workspace.macaw_demo.eng_comp"      # Databricks will not resolve a bare 'eng_comp'
+DATA_PRODUCT = "<your-data_product_id>"           # the data product you query
+SQL_TOOL = "<your-custom-agent-tool-name>"        # your published Alation agent SQL tool
+ENG_COMP = "workspace.macaw_demo.eng_comp"        # Databricks will not resolve a bare 'eng_comp'
 
 
-# Test configurations based on user policies
-# Alice: gpt-4o-mini/gpt-4o, max 2000 tokens; reads eng_comp freely
-# Bob:   gpt-4o-mini only,   max 100 tokens;  eng_comp needs a manager's attestation
 USER_TESTS = {
     "bob": {
-        "email": "bob.alation@gmail.com",
+        "password": "<bob-password>",
         "policy_desc": "gpt-4o-mini/gpt-4o, max 2000 tokens",
         "llm": [
             # (model, max_tokens)
@@ -61,7 +58,7 @@ USER_TESTS = {
         ],
     },
     "alice": {
-        "email": "alice.alation@gmail.com",
+        "password": "<alice-password>",
         "policy_desc": "gpt-4o-mini only, max 100 tokens",
         "llm": [
             ("gpt-4o", 80),             # BLOCKED - model not allowed
@@ -77,11 +74,7 @@ USER_TESTS = {
 
 
 def get_env(name: str) -> str:
-    """Read a required environment variable.
 
-    Strips surrounding quotes, including the curly ones a copy-paste from a document
-    leaves behind - those reach the Authorization header and fail as a bad credential.
-    """
     value = os.environ.get(name, "").strip().strip("\"'“”‘’")
     if not value:
         sys.exit(f"Missing {name}. Set it with:  export {name}=...")
@@ -91,11 +84,7 @@ def get_env(name: str) -> str:
 
 
 def verdict_for(error: Exception) -> str:
-    """Separate a MACAW policy decision from any other failure.
 
-    A demo about policy enforcement must never report a broken credential or a network
-    fault as though the policy had blocked it.
-    """
     message = str(error).lower()
     if "attest" in message:
         return "ATTESTATION"
@@ -109,19 +98,19 @@ def verdict_for(error: Exception) -> str:
 
 
 def test_user(username: str, openai_service: SecureOpenAI, proxy: SecureMCPProxy):
-    """Run one user's LLM and SQL calls under their own identity."""
+
     config = USER_TESTS[username]
     print(f"\n{'=' * 60}")
     print(f"{username.upper()} - {config['policy_desc']}")
     print("=" * 60)
 
-    # 1. Authenticate and register the user agent
-    jwt_token, _ = RemoteIdentityProvider().login(config["email"], PASSWORD)
+  
+    jwt_token, _ = RemoteIdentityProvider().login(username, config["password"])
     user = MACAWClient(user_name=username, iam_token=jwt_token,
                        agent_type="user", app_name="alation")
     user.register()
 
-    # 2. LLM calls - A2A to the shared OpenAI service, gated on model and max_tokens
+  
     for model, max_tokens in config["llm"]:
         try:
             result = user.invoke_tool(
@@ -138,12 +127,12 @@ def test_user(username: str, openai_service: SecureOpenAI, proxy: SecureMCPProxy
         except Exception as e:
             print(f"  LLM  {model} /{max_tokens} -> {verdict_for(e)}")
 
-    # 3. SQL calls - through the user-bound proxy, gated by the verifier and policy
+    
     bound = proxy.bind_to_user(user)
     for sql in config["sql"]:
         try:
             result = bound.call_tool(
-                "run_query_sql_custom_adi",
+                SQL_TOOL,
                 {"sql": sql, "message": "demo", "data_product_id": DATA_PRODUCT},
             )
             print(f"  SQL  {sql}\n       -> {str(result)[:220]}")

@@ -14,8 +14,8 @@ It also shows control by intent. The same tool call is judged by what the SQL is
 
 | User | Role | Tool available | Model available | Max Token | SQL allowed | Needs approval when |
 |------|------|----------------|-----------------|-----------|-------------|---------------------|
-| alice | Financial Analyst | `run_query_sql_custom_adi` | `gpt-4o-mini` | 100 | select, update | any statement touching `eng_comp` |
-| bob | manager | `run_query_sql_custom_adi`, `run_data_product_query_macaw_ii`, `run_analytics_agent_macaw`, `run_generate_pdf_from_a_chat_macaw` | `gpt-4o-mini`, `gpt-4o` | 2000 | select, update | an UPDATE touching `eng_comp` |
+| alice | Financial Analyst | `<your-custom-agent-tool-name>` | `gpt-4o-mini` | 100 | select, update | any statement touching `eng_comp` |
+| bob | manager | `<your-custom-agent-tool-name>` | `gpt-4o-mini`, `gpt-4o` | 2000 | select, update | an UPDATE touching `eng_comp` |
 
 
 
@@ -29,7 +29,7 @@ demo-alation/
 │   ├── bu.json                     # bu:analytics
 │   ├── user_alice.json             # user:alice
 │   ├── user_bob.json               # user:bob
-│   └── alation-remote-proxy.json   # app:alation-remote-proxy
+│   └──  app_alation.json          # app:alation-remote-proxy
 ├── setup/
 │   ├── alation_verifier.py         # AlationSQLGuardVerifier
 │   └── get_alation_user_token.py   # Alation OAuth + PKCE token
@@ -45,6 +45,22 @@ demo-alation/
 - macaw client installed and configured
 - env's configured
 - A alation tenant
+- A databricks workspace
+
+#### Platform setup
+
+Before the policies mean anything, the catalog objects they name have to exist. Set these up once:
+
+- **Databricks tables** — create a `macaw_demo` schema in your `workspace` catalog with the tables
+  the demo gates on: `workspace.macaw_demo.eng_comp` (the sensitive table that needs a manager's
+  attestation) plus a few tables whose names match the allowed set — `customer`, `finance`,
+  `engineering`, or `sales_`.
+- **Data source** — attach that Databricks workspace to Alation as a data source.
+- **Data product** — create a data product on top of that data source. Use its id for
+  `DATA_PRODUCT` in `script.py`.
+- **Custom agent tool** — in Alation, create a custom agent / tool that takes a `sql` parameter, so
+  the demo can call it. Use its name for `SQL_TOOL` in `script.py` (the demo ships a placeholder
+  `<your-custom-agent-tool-name>` — replace it with yours).
 
 ```bash
 export ALATION_BASE_URL="https://<tenant>.alationcloud.com"
@@ -118,13 +134,20 @@ python setup/get_alation_user_token.py --refresh <REFRESH_TOKEN>
 Import the policies from the `Policies/` directory into your MACAW workspace via the Console.
 Load each one: Policies → Add Policy → Code Editor → paste JSON → Validate → Save.
 
+Before loading, replace the placeholder with your own tool. The policies guard a single Alation
+agent tool that takes a `sql` parameter, shipped as the placeholder
+`tool:alation-remote-proxy/<your-custom-agent-tool-name>`. In `user_alice.json`, `user_bob.json`, and
+`app_alation.json`, replace `<your-custom-agent-tool-name>` with the name of the custom agent tool you
+created in Alation (the same value you set as `SQL_TOOL` in `script.py`). The verifier stamps
+`stmt_type` on that tool, and the policies gate on it.
+
 | # | File | Policy id |
 |---|---|---|
 | 1 | `Policies/company.json` | `company:alation-MACAW` |
 | 2 | `Policies/bu.json` | `bu:analytics` |
 | 3 | `Policies/user_alice.json` | `user:alice` |
 | 4 | `Policies/user_bob.json` | `user:bob` |
-| 5 | `Policies/alation-remote-proxy.json` | `app:alation-remote-proxy` |
+| 5 | `Policies/app_alation.json` | `app:alation-remote-proxy` |
 
 #### Policy Hierarchy
 

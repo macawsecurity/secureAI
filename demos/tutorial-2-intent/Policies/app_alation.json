@@ -1,0 +1,52 @@
+{
+  "policy_id": "app:alation-remote-proxy",
+  "version": "0.8.0",
+  "scope": "global",
+  "resources": [
+    "tool:alation-remote-proxy/**"
+  ],
+  "constraints": {
+    "denied_parameters": {
+      "tool:alation-remote-proxy/<your-custom-agent-tool-name>": {
+        "sql": [
+          "*DELETE *",
+          "*delete *",
+          "*DROP *",
+          "*drop *",
+          "*TRUNCATE*",
+          "*truncate*",
+          "*ALTER *",
+          "*alter *",
+          "*MERGE *",
+          "*merge *",
+          "*CREATE *",
+          "*create *",
+          "*INSERT *",
+          "*insert *",
+          "*GRANT *",
+          "*grant *",
+          "*REVOKE*",
+          "*revoke*",
+          "*VACUUM*",
+          "*vacuum*",
+          "*COPY INTO*",
+          "*copy into*",
+          "*EXECUTE IMMEDIATE*",
+          "*execute immediate*"
+        ]
+      }
+    },
+    "parameters": {
+      "tool:alation-remote-proxy/<your-custom-agent-tool-name>": {
+        "stmt_type": {
+          "allowed_values": [
+            "select",
+            "update"
+          ],
+          "type": "string"
+        }
+      }
+    }
+  },
+  "description": "Alation native MCP via SecureMCPProxy -- statement-type allow-list + destructive-SQL denies; per-caller gates live in user:alice / user:bob."
+}

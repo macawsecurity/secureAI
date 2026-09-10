@@ -7,9 +7,6 @@
     "llm:**",
     "agent:**"
   ],
-  "denied_resources": [
-    "data:sensitive/*"
-  ],
   "constraints": {
     "rate_limit": 100
   },
