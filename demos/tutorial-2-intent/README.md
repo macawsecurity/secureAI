@@ -5,12 +5,16 @@ action-tracking for a fictional XYZ Corp. Controls are specified through MAPL po
 the MACAW runtime invisbly. We use Alation as the contextual data layer, Databricks as the backend
 lakehouse, and OpenAI as the LLM of choice. All these components are replaceable modularly.
 
+## Why This Matters
+
+| Problem | How MACAW handles it |
+|---------|----------------------|
+| Different roles should not get the same AI power, but the app code is identical for everyone. | Policy resolves from the caller's role (`company` → `BU` → `user`); each layer only narrows model, tokens, and SQL. |
+| Access should track real org identity, not hard-coded user checks. | Identity comes from the IdP's JWT claims, mapped to policy ids, so the same policies work with any OIDC provider. |
+| The same tool call is safe or dangerous by intent; a grant cannot tell `SELECT` from `DELETE`. | A verifier reads the SQL and stamps what it does; the policy allows `select`/`update` and blocks the rest. |
+| Some requests need a person's sign-off, not a binary allow or deny. | Human in the loop: the policy holds the query for a manager's attestation before it runs. |
+
 ## Overview
-
-The demo shows how different users get different access control based on their org role,
-demonstrating policy based control.
-
-It also shows control by intent. The same tool call is judged by what the SQL is trying to do depending upon the policy.
 
 | User | Role | Tool available | Model available | Max Token | SQL allowed | Needs approval when |
 |------|------|----------------|-----------------|-----------|-------------|---------------------|
@@ -51,16 +55,16 @@ demo-alation/
 
 Before the policies mean anything, the catalog objects they name have to exist. Set these up once:
 
-- **Databricks tables** — create a `macaw_demo` schema in your `workspace` catalog with the tables
+- **Databricks tables**: create a `macaw_demo` schema in your `workspace` catalog with the tables
   the demo gates on: `workspace.macaw_demo.eng_comp` (the sensitive table that needs a manager's
-  attestation) plus a few tables whose names match the allowed set — `customer`, `finance`,
+  attestation) plus a few tables whose names match the allowed set, `customer`, `finance`,
   `engineering`, or `sales_`.
-- **Data source** — attach that Databricks workspace to Alation as a data source.
-- **Data product** — create a data product on top of that data source. Use its id for
+- **Data source**: attach that Databricks workspace to Alation as a data source.
+- **Data product**: create a data product on top of that data source. Use its id for
   `DATA_PRODUCT` in `script.py`.
-- **Custom agent tool** — in Alation, create a custom agent / tool that accepts `sql`, `message`, and
-  `data_product_id` parameters (the demo calls it with all three — see `script.py`). Use its name for
-  `SQL_TOOL` in `script.py`; it ships as the placeholder `<your-custom-agent-tool-name>` — replace it
+- **Custom agent tool**: in Alation, create a custom agent / tool that accepts `sql`, `message`, and
+  `data_product_id` parameters (the demo calls it with all three, see `script.py`). Use its name for
+  `SQL_TOOL` in `script.py`; it ships as the placeholder `<your-custom-agent-tool-name>`, replace it
   with yours.
 
 ```bash
@@ -81,7 +85,7 @@ pip install "$MACAW_HOME"/macaw_client-*.whl "$MACAW_HOME/secureAI[all]"
 
 Console → Tutorials → Make it Real → Connect Identity Provider → Option B.
 
-While setting up the IdP, add two users, `alice` and `bob` — a shared password is fine. Put that
+While setting up the IdP, add two users, `alice` and `bob`, a shared password is fine. Put that
 password in `script.py` (each user's `password` field in `USER_TESTS`); that is how the demo logs them in.
 
 When done with the setup follow this claims mapping:
@@ -186,7 +190,7 @@ python script.py
 Custom verifiers run inside the verification pipeline before the policy decision, compute facts
 about the request, and stamp them onto the parameters so MAPL can gate on them.
 
-`setup/alation_verifier.py` — AlationSQLGuardVerifier
+`setup/alation_verifier.py`: AlationSQLGuardVerifier
 
 ```python
 proxy.macaw_client.agent.verification_pipeline.add_verifier(AlationSQLGuardVerifier(), priority=20)
