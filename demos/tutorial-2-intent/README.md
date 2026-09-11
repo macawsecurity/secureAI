@@ -10,7 +10,7 @@ lakehouse, and OpenAI as the LLM of choice. All these components are replaceable
 | Problem | How MACAW handles it |
 |---------|----------------------|
 | Different roles should not get the same AI power, but the app code is identical for everyone. | Policy resolves from the caller's role (`company` → `BU` → `user`); each layer only narrows model, tokens, and SQL. |
-| Access should track real org identity, not hard-coded user checks. | Identity comes from the IdP's JWT claims, mapped to policy ids, so the same policies work with any OIDC provider. |
+| Access should track real org identity, not hard-coded user checks. | Identity comes from the configured IDP |
 | The same tool call is safe or dangerous by intent; a grant cannot tell `SELECT` from `DELETE`. | A verifier reads the SQL and stamps what it does; the policy allows `select`/`update` and blocks the rest. |
 | Some requests need a person's sign-off, not a binary allow or deny. | Human in the loop: the policy holds the query for a manager's attestation before it runs. |
 
