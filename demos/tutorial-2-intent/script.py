@@ -44,7 +44,7 @@ ENG_COMP = "workspace.macaw_demo.eng_comp"        # Databricks will not resolve 
 
 USER_TESTS = {
     "bob": {
-        "password": "<bob-password>",
+        "password": "Bob@123!",
         "policy_desc": "gpt-4o-mini/gpt-4o, max 2000 tokens",
         "llm": [
             # (model, max_tokens)
@@ -58,7 +58,7 @@ USER_TESTS = {
         ],
     },
     "alice": {
-        "password": "<alice-password>",
+        "password": "Alice123!",
         "policy_desc": "gpt-4o-mini only, max 100 tokens",
         "llm": [
             ("gpt-4o", 80),             # BLOCKED - model not allowed

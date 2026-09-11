@@ -58,9 +58,10 @@ Before the policies mean anything, the catalog objects they name have to exist. 
 - **Data source** — attach that Databricks workspace to Alation as a data source.
 - **Data product** — create a data product on top of that data source. Use its id for
   `DATA_PRODUCT` in `script.py`.
-- **Custom agent tool** — in Alation, create a custom agent / tool that takes a `sql` parameter, so
-  the demo can call it. Use its name for `SQL_TOOL` in `script.py` (the demo ships a placeholder
-  `<your-custom-agent-tool-name>` — replace it with yours).
+- **Custom agent tool** — in Alation, create a custom agent / tool that accepts `sql`, `message`, and
+  `data_product_id` parameters (the demo calls it with all three — see `script.py`). Use its name for
+  `SQL_TOOL` in `script.py`; it ships as the placeholder `<your-custom-agent-tool-name>` — replace it
+  with yours.
 
 ```bash
 export ALATION_BASE_URL="https://<tenant>.alationcloud.com"
@@ -79,6 +80,9 @@ pip install "$MACAW_HOME"/macaw_client-*.whl "$MACAW_HOME/secureAI[all]"
 ### 3. Set Up Identity Provider
 
 Console → Tutorials → Make it Real → Connect Identity Provider → Option B.
+
+While setting up the IdP, add two users, `alice` and `bob` — a shared password is fine. Put that
+password in `script.py` (each user's `password` field in `USER_TESTS`); that is how the demo logs them in.
 
 When done with the setup follow this claims mapping:
 
@@ -162,7 +166,7 @@ company:alation-MACAW (base restrictions)
 app:alation-remote-proxy
 ```
 
-Lower levels can only restrict, never expand permissions from parent policies.
+
 
 ### 6. Run the Demo
 

@@ -1,23 +1,25 @@
 # Tutorial 4: Observability
 
-This tutorial demonstrates zero-instrumentation audit logging and OTEL export. Every agent operation
-is automatically captured with cryptographic integrity. The MACAW SDK adapters come with inbuilt
-logging to observability, so every tool invocation, policy evaluation, prompt lifecycle step, and
-agent registration is recorded with no instrumentation code in your app. Use any MACAW SDK, the OpenAI
-drop-in, the MCP proxy, whichever, and the complete request flow is emitted as structured OTel audit
-automatically. For custom, application-specific events you can also use `MACAWClient.log_event()`; use
-`signed=True` for compliance. You point MACAW at your existing observability stack once, in the
-Console, and the same schema flows from every adapter. We use Datadog as the observability platform;
-Splunk, Grafana, Jaeger, and New Relic are supported the same way. 
+This tutorial demonstrates zero-instrumentation observability: every agent operation lands in your observability stack as OpenTelemetry, with no logging code.
+
+## Why This Matters
+
+Four problems teams hit when they try to observe AI agents, and how MACAW handles each:
+
+| Problem | How MACAW handles it |
+|---------|----------------------|
+| You already run an observability stack (Datadog, Splunk, Grafana, Jaeger, New Relic) and the telemetry has to land there. | Point MACAW at that backend once in the Console over OTLP. No host agent, no env vars, no code. |
+| A consistent instrumentation standard is hard to hold across services. | One OTel event schema is emitted identically by every adapter. |
+| The libraries you call are third-party code you cannot edit to add logging. | The SDK adapters are already instrumented; wrapping the call is all it takes. |
+| Custom, application-specific events do not fit the standard schema. | `log_event()` puts business events in the same audit stream; `signed=True` signs and hash-chains them for compliance. |
 
 ## Overview
 
+The demo generates two kinds of traffic; both land in the same OTel stream with no logging code:
 
-This demo exercises two paths:
-
-| Script | Shows | Emits |
+| Source | Shows | Emits |
 |--------|-------|-------|
-| `1a_autologging.py` | auto-instrumentation across three adapters (OpenAI, Anthropic, Pydantic AI) | `prompt_received`, `policy_fetch`, `policy_decision`, `tool_execution` |
+| `test_harness.py` (repo root) | auto-instrumentation across the SDK adapters | `prompt_received`, `policy_fetch`, `policy_decision`, `tool_execution` |
 | `1b_custom_log_event.py` | a custom business event in the same stream | `agent_registered`, `export_start`, `export_complete`, `agent_unregistered` |
 
 
@@ -27,10 +29,13 @@ This demo exercises two paths:
 
 ```
 tutorial-4-observability/
-├── 1a_autologging.py        # three adapters, auto-logged, no logging code
 ├── 1b_custom_log_event.py   # a custom log_event business event
 └── README.md
 ```
+
+Auto-instrumentation is shown by the repo's own `secureAI/test_harness.py`, which exercises the SDK
+adapters end to end. There is no separate script here for it: the point is that logging is automatic,
+so any traffic through the SDK is enough.
 
 ## Quick Start
 
@@ -48,81 +53,81 @@ tutorial-4-observability/
 pip install "$MACAW_HOME"/macaw_client-*.whl "$MACAW_HOME/secureAI[all]"
 ```
 
-### 3. Add the Datadog Endpoint
+### 3. Set Up the Datadog Endpoint
 
-This is the whole setup. Nothing is installed on the host; the API key is entered in the Console.
+Nothing is installed on the host. You need two things: your Datadog site URL and an API key.
 
-#### 3.1 Determine your Datadog site
+**Find your site.** Open your logged-in Datadog tab and read the hostname in the address bar, before
+the first `/`. The site is chosen at signup and cannot be changed. Append the signal path `/v1/logs` —
+for US1 that is `https://otlp.datadoghq.com/v1/logs`.
 
-Open your logged-in Datadog tab and read the hostname in the address bar, before the first `/`. The
-site is chosen at signup and cannot be changed.
-
-
-Append the signal path `/v1/logs`.
-Example  For US1: `https://otlp.datadoghq.com/v1/logs`.
-
-#### 3.2 Create the Datadog API key
+**Create the API key.**
 
 1. Go to `https://<site-hostname>/organization-settings/api-keys`.
 2. **New Key** → name it `macaw-otel` (label only) → create.
 3. In the **New API Key** dialog click **Copy**. It is 32 hex characters. Copy now, it is masked
    after you leave.
 
-It must be an **API key**, not an Application key, in the same org as the site from 3.1. Ignore the
+It must be an **API key**, not an Application key, in the same org as your site. Ignore the
 Remote Config / PAR toggles.
 
-#### 3.3 Add the endpoint in the MACAW Console
+### 4. Configure MACAW
+
+Add the OTEL endpoint in the Console; the key never leaves it.
 
 1. Console → the pane holding the Events Log / Audit Log and the Endpoints table
    ("Export events to observability…").
 2. **Add OTEL Endpoint**.
-3. **TEMPLATE** choose → **Datadog**.
+3. **TEMPLATE** → **Datadog**.
 4. Replace the CONFIGURATION JSON with exactly these four fields:
 
 ```json
 {
   "endpoint": "https://otlp.datadoghq.com/v1/logs",
   "service_name": "<your-service-name>",
-  "headers": { "dd-api-key": "<32-hex key from 3.2>" },
+  "headers": { "dd-api-key": "<32-hex key from step 3>" },
   "signal": "logs"
 }
 ```
 
-- `endpoint`: the base URL from 3.1 plus `/v1/logs`. Full path, no trailing slash.
+- `endpoint`: your site URL plus `/v1/logs`. Full path, no trailing slash.
 - `service_name`: your choice; becomes Datadog's `service` tag and every query keys off it. One per
   deployment.
 - `signal`: `"logs"`. Use `"traces"` only for a trace-only backend (Jaeger).
 
-5. **Add Endpoint**.
+5. **Add Endpoint**. Open the new row's detail card: a green dot and the footer **Connected, last
+   export &lt;time&gt;**.
 
-Open the new row's detail card: a green dot and the footer **Connected, last export &lt;time&gt;**.
+### 5. Run the Demo
 
-
-### 4. Generate Traffic
-
-Run both scripts. Each needs a venv with the SDK and the provider keys for the LLM calls, with no OTel or
-Datadog variables anywhere, the export is already wired in the Console.
+Both need only the SDK and the provider keys for the LLM calls. No OTel or Datadog variables anywhere,
+the export is already wired in the Console.
 
 ```bash
 source <path to venv>/bin/activate
 export MACAW_HOME="<path to macaw-client>"
-export OPENAI_API_KEY="<key>"        # 1a openai + pydantic blocks
-export ANTHROPIC_API_KEY="<key>"     # 1a anthropic block
+export OPENAI_API_KEY="<key>"
+export ANTHROPIC_API_KEY="<key>"
 
-python 1a_autologging.py
+# Auto-instrumentation: the repo harness exercises the SDK adapters. No logging code.
+python ../../test_harness.py
+
+# Custom events: a business event in the same stream via log_event.
 python 1b_custom_log_event.py
 ```
-Both flow to Datadog with nologging code and no OTel setup on the host.
 
-### 5. Verify in Datadog
+Both flow to Datadog with no logging code and no OTel setup on the host.
+
+### 6. Verify in Datadog
 
 Go to `https://<site-hostname>/logs` → time range **Last 15 minutes** → query
 `service:<your-service-name>`.
 
 
-## What the Tutorial Shows
+## What the Demo Shows
 
 1. **Zero-instrumentation logging**: the complete request flow (tool invocations, policy evaluations, prompt lifecycle, agent registration) is emitted as OTel audit with no instrumentation code
-2. **One-time wiring**: the backend is configured once in the Console, with no env vars and nothing on the host
-3. **Custom events**: `log_event` puts business events in the same signed stream
+2. **A consistent schema**: the same event shape flows from every adapter, so cross-service queries work
+3. **One-time wiring**: the backend is configured once in the Console, with no env vars and nothing on the host
+4. **Custom events**: `log_event` puts business events in the same audit stream
 
