@@ -8,7 +8,7 @@ An object policy attaches rules to a data object, dataset, table etc.
 
 | Problem | How MACAW handles it |
 |---------|----------------------|
-| One tool reaches many data products, and each needs its own rules. | Attach a separate object policy per data product; MACAW resolves the right one at runtime from `data_product_id`. |
+| One tool reaches many data products | Attach an object policy on a data product; MACAW resolves the right one at runtime from `data_product_id`. |
 | A sensitive object needs tighter limits than the rest. | Write a restrictive policy for just that object. It narrows what the data source allows and leaves the others untouched. |
 | A new or unpoliced object has no rule yet. | It falls back to `alation:base`, which requires admin approval, so it is safe by default. |
 
