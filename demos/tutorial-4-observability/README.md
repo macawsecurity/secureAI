@@ -106,8 +106,7 @@ the export is already wired in the Console.
 ```bash
 source <path to venv>/bin/activate
 export MACAW_HOME="<path to macaw-client>"
-export OPENAI_API_KEY="<key>"
-export ANTHROPIC_API_KEY="<key>"
+
 
 # Auto-instrumentation: the repo harness exercises the SDK adapters. No logging code.
 python ../../test_harness.py
@@ -127,7 +126,7 @@ Go to `https://<site-hostname>/logs` → time range **Last 15 minutes** → quer
 ## What the Demo Shows
 
 1. **Zero-instrumentation logging**: the complete request flow (tool invocations, policy evaluations, prompt lifecycle, agent registration) is emitted as OTel audit with no instrumentation code
-2. **A consistent schema**: the same event shape flows from every adapter, so cross-service queries work
-3. **One-time wiring**: the backend is configured once in the Console, with no env vars and nothing on the host
+2. **A consistent schema**: the same event shape flows from every adapter.
+3. **One-time wiring**: configured once in the Console, with no env vars and nothing on the host
 4. **Custom events**: `log_event` puts business events in the same audit stream
 
