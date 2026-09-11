@@ -1,7 +1,7 @@
 # Tutorial 3: Object-Based Access Control
 
 
-An object policy attaches rules to a data object, dataset, table etc.This tutorial attaches the rules to the dataproduct. An **object policy** on a data product sets which tables it exposes; a **content verifier** holds every query to read-only, no destructive SQL.
+An object policy attaches rules to a data object, dataset, table etc. This tutorial attaches a set of rules to a dataproduct. An **object policy** on a data product sets which tables it exposes; a **content verifier** holds every query to read-only, no destructive SQL.
 
 
 ## Why This Matters
