@@ -1,46 +1,29 @@
 """
-alation_verifier.py -- SQL statement-type guardrail for the Alation MCP SQL tools.
+alation_verifier.py -- content guard for the Alation MCP SQL tools.
 
-Parses the caller's SQL and stamps THREE flat params the MAPL policy gates on:
+MAPL matches parameter values; it cannot read SQL. So this verifier parses the SQL with sqlglot
+before the policy decision and stamps three flat params the policy gates on:
 
-    stmt_type        = "select" | "update" | "insert" | "delete" | "merge" | "create"
-                     | "drop" | "truncate" | "other" | "nl_only" | "denied"
-                       ("denied" = fail-closed; "nl_only" = a SQL tool called with NO SQL)
-    touches_salary   = "true" | "false"   (does any identifier in the SQL contain "salary"?)
-    touches_eng_comp = "true" | "false"   (does the SQL reference a SENSITIVE_TABLES table?)
+    stmt_type        -- select / update / insert / ... / other / nl_only / denied  (the AST root)
+    touches_salary   -- true / false  (any identifier contains "salary")
+    touches_eng_comp -- true / false  (any table in SENSITIVE_TABLES)
 
 The verifier CLASSIFIES; the policy DECIDES:
 
-    A) ANALYST (bob)   -> ANY statement touching eng_comp attests to a manager;
-                          other tables are ungated (within the {select, update} allow-list).
-    B) MANAGER (alice) -> only an UPDATE touching eng_comp attests (to an admin);
-                          everything else within the allow-list is ungated.
-    C) DELETE          -> denied for everyone. So is anything outside the {select, update}
-                          allow-list (insert / merge / CTAS / drop / truncate / other).
+    ANALYST (alice) -> any statement touching eng_comp needs a manager's attestation.
+    MANAGER (bob)   -> only an UPDATE touching eng_comp needs an admin's attestation.
+    Everyone        -> DELETE, and anything outside the {select, update} allow-list, is denied.
 
-touches_eng_comp closes the `SELECT *` hole in touches_salary: `SELECT * FROM eng_comp` names
-no column identifier, so salary detection misses it, but the TABLE is still named.
+touches_eng_comp closes the `SELECT *` hole in touches_salary: `SELECT * FROM eng_comp` names no
+column, so salary detection misses it, but the table is still caught.
 
-SALARY DETECTION scans EVERY identifier in the whole AST -- projection AND WHERE / ORDER BY /
-GROUP BY / JOIN / CTE / INSERT column-list -- because `WHERE base_salary > 200000` leaks salary
-by row selection without projecting it. Identifiers are normalized first (Databricks is
-CASE_INSENSITIVE, backticks stripped) so `Base_Salary` / `BASE_SALARY` / `` `base_salary` ``
-all match. KNOWN GAP: `SELECT *` names no identifier, so it does NOT trip salary detection
-(the statement-type allow-list still applies).
-
-DESIGN (all verified against sqlglot 30.12.0, dialect="databricks"):
-- Classify by the ROOT node ONLY, never "contains a SELECT" -- INSERT / CREATE-AS / MERGE all
-  embed a Select, so a contains-check is trivially fooled.
-- ALLOW-LIST, not blocklist: anything unrecognized becomes "other" and the policy denies it.
-  DROP / TRUNCATE / MERGE / CTAS / INSERT OVERWRITE all destroy data without the word DELETE.
-- FAIL CLOSED. Empty sql, multi-statement (`SELECT 1; DELETE ...`), unparseable SQL, or an
-  `exp.Command` stamp stmt_type="denied". `exp.Command` is sqlglot's fallback for unsupported
-  syntax and covers BOTH dynamic SQL (`EXECUTE IMMEDIATE`) and `ALTER ... DROP COLUMN`.
-- MULTI-PARAM: the live endpoint's `run_analytics_agent_macaw` exposes BOTH `sql` and `query`.
-  Every name in SQL_PARAM_NAMES is classified and the WORST result wins, so a benign `sql`
-  cannot mask a destructive `query`. Checking only one name is a free bypass.
-- A scoped SQL tool called with NO SQL is stamped "nl_only": the agent would generate the SQL
-  server-side where this verifier can never see it, so it is denied by the policy allow-list.
+Principles (verified against sqlglot 30.12.0, dialect="databricks"):
+- Classify by the ROOT node, not keywords: INSERT / CREATE-AS / MERGE all embed a SELECT.
+- Allow-list, not blocklist: anything unrecognized becomes "other", which no policy allows.
+- Fail closed: empty, multi-statement, unparseable, or exp.Command (EXECUTE IMMEDIATE / ALTER) -> "denied".
+- Worst-wins across every SQL param (the endpoint may expose both `sql` and `query`), so a benign
+  field cannot mask a destructive one.
+- A SQL tool called with NO SQL is "nl_only": the agent would write the SQL server-side, unseen, so denied.
 """
 from typing import Tuple  # noqa: F401  (kept for callers importing type hints)
 

@@ -1,6 +1,7 @@
 # Tutorial 5: Secure Claude Code (secCC)
 
-Secure Claude Code (secCC) is an extension of MACAW security layer to protect ungoverned Claude Code with MACAW's trust layer and MAPL policies, so every tool and mcp call is governed before it acts. 
+Secure Claude Code (secCC) is an extension of the MACAW security layer to protect ungoverned Claude Code with MACAW's trust layer and MAPL policies, so every tool it runs and every MCP call is governed before it acts.
+
 
 ## Why This Matters
 
