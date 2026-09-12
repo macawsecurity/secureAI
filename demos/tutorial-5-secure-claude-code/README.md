@@ -1,6 +1,6 @@
 # Tutorial 5: Secure Claude Code (secCC)
 
-secCC puts a MACAW policy checkpoint on every tool Claude Code runs, including your connected MCP servers, so reads run free while writes, deletes, and network calls need approval.
+Secure Claude Code (secCC) is an extension of MACAW security layer to protect ungoverned Claude Code with MACAW's trust layer and MAPL policies, so every tool and mcp call is governed before it acts. 
 
 ## Why This Matters
 
