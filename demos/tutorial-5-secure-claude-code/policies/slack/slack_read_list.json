@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_read_list",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_read_list"
+  ],
+  "description": "Slack read_list via connector -- read-only; opaque ids cannot be confined by grammar."
+}

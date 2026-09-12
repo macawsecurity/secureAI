@@ -1,0 +1,100 @@
+{
+  "policy_id": "app:claude_ai_Gmail",
+  "version": "1.3",
+  "scope": "app",
+  "resources": [
+    "mcp:claude_ai_Gmail/**"
+  ],
+  "constraints": {
+    "attestations": {
+      "gmail_send_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Approve sending, replying to, or forwarding an email.",
+        "one_time": false,
+        "priority": 100,
+        "time_to_live": 300,
+        "timeout": 120
+      },
+      "gmail_destructive_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Approve trashing, spam-marking, sensitive-labelling, or deleting a Gmail object.",
+        "one_time": true,
+        "priority": 90,
+        "time_to_live": 300,
+        "timeout": 120
+      }
+    },
+    "parameters": {
+      "mcp:claude_ai_Gmail/create_draft": {
+        "to": {
+          "max_items": 25,
+          "type": "array"
+        },
+        "cc": {
+          "max_items": 25,
+          "type": "array"
+        },
+        "bcc": {
+          "max_items": 0,
+          "type": "array"
+        }
+      },
+      "mcp:claude_ai_Gmail/update_draft": {
+        "to": {
+          "max_items": 25,
+          "type": "array"
+        },
+        "cc": {
+          "max_items": 25,
+          "type": "array"
+        },
+        "bcc": {
+          "max_items": 0,
+          "type": "array"
+        }
+      },
+      "mcp:claude_ai_Gmail/get_message": {
+        "messageFormat": {
+          "allowed_values": [
+            "MINIMAL",
+            "FULL_CONTENT",
+            "METADATA_ONLY",
+            "PLAIN_TEXT"
+          ],
+          "type": "string"
+        }
+      },
+      "mcp:claude_ai_Gmail/create_label": {
+        "labelListVisibility": {
+          "allowed_values": [
+            "LABEL_SHOW",
+            "LABEL_SHOW_IF_UNREAD"
+          ],
+          "type": "string"
+        },
+        "messageListVisibility": {
+          "allowed_values": [
+            "SHOW"
+          ],
+          "type": "string"
+        }
+      },
+      "mcp:claude_ai_Gmail/update_label": {
+        "labelListVisibility": {
+          "allowed_values": [
+            "LABEL_SHOW",
+            "LABEL_SHOW_IF_UNREAD"
+          ],
+          "type": "string"
+        },
+        "messageListVisibility": {
+          "allowed_values": [
+            "SHOW"
+          ],
+          "type": "string"
+        }
+      }
+    }
+  },
+  "description": "Gmail connector app policy; holds attestation definitions. One control per tool: attested tools use the attestation, allow tools carry param guardrails (test specimens, unverified on the mcp: path). Array-CONTENT rules (recipient domains, system-label denial) need a verifier. Per-tool policies extend this."
+}

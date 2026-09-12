@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_read_channel",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_read_channel"
+  ],
+  "description": "Slack read_channel via connector -- read-only; channel_id is opaque and cannot be confined by grammar, so no constraint."
+}

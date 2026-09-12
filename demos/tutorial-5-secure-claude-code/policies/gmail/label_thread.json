@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/label_thread",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/label_thread"
+  ],
+  "description": "Gmail label_thread via connector; organizational label add."
+}

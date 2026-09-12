@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Google_Drive/create_file",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Google_Drive",
+  "resources": [
+    "mcp:claude_ai_Google_Drive/create_file"
+  ],
+  "attestations": [
+    "drive_write_approved"
+  ],
+  "description": "Drive create_file via connector; parentId cannot be confined by grammar, so approval gates the write."
+}

@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/mark_message_spam",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/mark_message_spam"
+  ],
+  "attestations": [
+    "gmail_destructive_approved"
+  ],
+  "description": "Gmail mark_message_spam via connector; suppresses and trains the filter, so approval gates it."
+}

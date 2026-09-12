@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/trash_message",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/trash_message"
+  ],
+  "attestations": [
+    "gmail_destructive_approved"
+  ],
+  "description": "Gmail trash_message via connector; destructive, so approval gates the removal."
+}

@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/get_draft",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/get_draft"
+  ],
+  "description": "Gmail get_draft via connector, read-only; draftId is opaque."
+}

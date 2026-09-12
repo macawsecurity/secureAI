@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Google_Drive/update_file",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Google_Drive",
+  "resources": [
+    "mcp:claude_ai_Google_Drive/update_file"
+  ],
+  "attestations": [
+    "drive_write_approved"
+  ],
+  "description": "Drive update_file via connector; parentId here is a hidden move, so approval gates the edit or move."
+}

@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_schedule_message",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_schedule_message"
+  ],
+  "attestations": [
+    "slack_schedule_approved"
+  ],
+  "description": "Slack schedule_message via connector -- fires after the session ends and cannot be edited via API, so approval gates the deferred send."
+}

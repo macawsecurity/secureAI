@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/update_draft",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/update_draft"
+  ],
+  "description": "Gmail update_draft via connector; staging only, not delivered until a send verb runs."
+}

@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_create_canvas",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_create_canvas"
+  ],
+  "attestations": [
+    "slack_create_approved"
+  ],
+  "description": "Slack create_canvas via connector -- creates a persistent canvas document, so approval gates the creation."
+}

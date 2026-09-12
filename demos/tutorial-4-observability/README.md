@@ -45,7 +45,7 @@ so any traffic through the SDK is enough.
 - MACAW console account
 - macaw client installed and configured
 - A Datadog account
-- Provider keys for the LLM calls (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`)
+- Provider keys optional (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`), only for the harness's LLM examples
 
 ### 2. Install Dependencies
 
@@ -100,13 +100,17 @@ Add the OTEL endpoint in the Console; the key never leaves it.
 
 ### 5. Run the Demo
 
-Both need only the SDK and the provider keys for the LLM calls. No OTel or Datadog variables anywhere,
-the export is already wired in the Console.
+Both need only `MACAW_HOME` and the SDK. No OTel or Datadog variables anywhere; the export is already
+wired in the Console. Provider keys are optional: set them to also run the harness's LLM examples,
+otherwise those skip while the keyless MCP examples still emit the full event stream.
 
 ```bash
 source <path to venv>/bin/activate
 export MACAW_HOME="<path to macaw-client>"
 
+# optional: set these to also exercise the OpenAI / Anthropic examples
+# export OPENAI_API_KEY="<key>"
+# export ANTHROPIC_API_KEY="<key>"
 
 # Auto-instrumentation: the repo harness exercises the SDK adapters. No logging code.
 python ../../test_harness.py

@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_list_channel_members",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_list_channel_members"
+  ],
+  "description": "Slack list_channel_members via connector -- read-only member listing; opaque channel_id cannot be confined by grammar."
+}

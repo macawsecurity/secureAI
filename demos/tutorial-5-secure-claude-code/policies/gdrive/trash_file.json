@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Google_Drive/trash_file",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Google_Drive",
+  "resources": [
+    "mcp:claude_ai_Google_Drive/trash_file"
+  ],
+  "attestations": [
+    "drive_destructive_approved"
+  ],
+  "description": "Drive trash_file via connector; destructive and keyed off one opaque id, so approval gates the removal."
+}

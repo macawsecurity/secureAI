@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_list_user_channels",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_list_user_channels"
+  ],
+  "attestations": [
+    "slack_search_private_approved"
+  ],
+  "description": "Slack list_user_channels via connector -- enumerates the user's private channels and DMs, so approval gates the disclosure."
+}

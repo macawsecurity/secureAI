@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/apply_sensitive_thread_label",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/apply_sensitive_thread_label"
+  ],
+  "attestations": [
+    "gmail_destructive_approved"
+  ],
+  "description": "Gmail apply_sensitive_thread_label via connector; TRASH/SPAM across a thread, so approval gates it."
+}

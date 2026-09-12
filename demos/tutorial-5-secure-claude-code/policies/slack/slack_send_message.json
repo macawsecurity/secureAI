@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_send_message",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_send_message"
+  ],
+  "attestations": [
+    "slack_send_approved"
+  ],
+  "description": "Slack send_message via connector -- posting to an opaque channel or DM id is ungateable by grammar, so approval gates the send."
+}

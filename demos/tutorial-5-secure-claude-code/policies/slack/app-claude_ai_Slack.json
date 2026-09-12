@@ -1,0 +1,68 @@
+{
+  "policy_id": "app:claude_ai_Slack",
+  "version": "1.2",
+  "scope": "app",
+  "resources": [
+    "mcp:claude_ai_Slack/**"
+  ],
+  "constraints": {
+    "attestations": {
+      "slack_send_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Approve posting a message or sharing a file to a Slack channel or DM.",
+        "one_time": false,
+        "priority": 100,
+        "time_to_live": 300,
+        "timeout": 120
+      },
+      "slack_schedule_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Approve scheduling a Slack message that fires after the session ends.",
+        "one_time": true,
+        "priority": 100,
+        "time_to_live": 300,
+        "timeout": 120
+      },
+      "slack_create_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Approve creating a persistent Slack object (channel, DM, canvas, or list).",
+        "one_time": true,
+        "priority": 80,
+        "time_to_live": 600,
+        "timeout": 120
+      },
+      "slack_search_private_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Approve sweeping private Slack channels and DMs or enumerating the user's DMs.",
+        "one_time": false,
+        "priority": 90,
+        "time_to_live": 300,
+        "timeout": 120
+      }
+    },
+    "parameters": {
+      "mcp:claude_ai_Slack/slack_search_channels": {
+        "channel_types": {
+          "allowed_values": [
+            "public_channel"
+          ],
+          "type": "string"
+        }
+      },
+      "mcp:claude_ai_Slack/slack_read_thread": {
+        "limit": {
+          "max": 100,
+          "type": "integer"
+        }
+      }
+    },
+    "denied_parameters": {
+      "mcp:claude_ai_Slack/slack_list_channel_members": {
+        "response_format": [
+          "ids_only"
+        ]
+      }
+    }
+  },
+  "description": "Slack connector app policy; one control per tool: attested tools use the attestation, allow tools carry param guardrails (test specimens, unverified on the mcp: path). Per-tool policies extend this."
+}

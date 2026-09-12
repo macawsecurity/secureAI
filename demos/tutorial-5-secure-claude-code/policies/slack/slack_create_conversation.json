@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_create_conversation",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_create_conversation"
+  ],
+  "attestations": [
+    "slack_create_approved"
+  ],
+  "description": "Slack create_conversation via connector -- creates a persistent channel or DM, so approval gates the creation."
+}

@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Google_Drive/search_files",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Google_Drive",
+  "resources": [
+    "mcp:claude_ai_Google_Drive/search_files"
+  ],
+  "description": "Drive search_files via connector, read-only; query is free text and ids opaque, ungateable by grammar."
+}

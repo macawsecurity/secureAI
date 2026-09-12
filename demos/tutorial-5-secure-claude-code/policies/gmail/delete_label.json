@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/delete_label",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/delete_label"
+  ],
+  "attestations": [
+    "gmail_destructive_approved"
+  ],
+  "description": "Gmail delete_label via connector; permanent, so approval gates the deletion."
+}

@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_add_reaction",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_add_reaction"
+  ],
+  "description": "Slack add_reaction via connector -- trivial write (an emoji on an existing message), no disclosure or persistence, so no gate."
+}

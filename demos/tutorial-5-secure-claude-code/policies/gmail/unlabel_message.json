@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/unlabel_message",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/unlabel_message"
+  ],
+  "description": "Gmail unlabel_message via connector; organizational label remove."
+}

@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_read_user_profile",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_read_user_profile"
+  ],
+  "description": "Slack read_user_profile via connector -- read-only profile lookup; opaque user_id cannot be confined by grammar."
+}

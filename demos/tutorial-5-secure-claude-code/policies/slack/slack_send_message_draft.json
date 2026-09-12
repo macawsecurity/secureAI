@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_send_message_draft",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_send_message_draft"
+  ],
+  "attestations": [
+    "slack_send_approved"
+  ],
+  "description": "Slack send_message_draft via connector -- drafts a message for a channel; gated with the send approval since content leaves to a target."
+}

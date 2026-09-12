@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/reply",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/reply"
+  ],
+  "attestations": [
+    "gmail_send_approved"
+  ],
+  "description": "Gmail reply via connector; replyAll fans out and recipients are unconfinable, so approval gates the send."
+}

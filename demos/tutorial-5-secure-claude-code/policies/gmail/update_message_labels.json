@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/update_message_labels",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/update_message_labels"
+  ],
+  "description": "Gmail update_message_labels via connector; atomic label add/remove."
+}

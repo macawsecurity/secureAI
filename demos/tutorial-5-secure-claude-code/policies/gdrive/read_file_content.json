@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Google_Drive/read_file_content",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Google_Drive",
+  "resources": [
+    "mcp:claude_ai_Google_Drive/read_file_content"
+  ],
+  "description": "Drive read_file_content via connector, read-only; fileId is opaque, ungateable by grammar."
+}

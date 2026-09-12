@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_create_list",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_create_list"
+  ],
+  "attestations": [
+    "slack_create_approved"
+  ],
+  "description": "Slack create_list via connector -- creates a persistent list, so approval gates the creation."
+}

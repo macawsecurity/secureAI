@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/unmark_thread_spam",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/unmark_thread_spam"
+  ],
+  "description": "Gmail unmark_thread_spam via connector; non-destructive reversal."
+}

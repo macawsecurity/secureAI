@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_get_file_upload_url",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_get_file_upload_url"
+  ],
+  "description": "Slack get_file_upload_url via connector -- only mints an upload URL and shares nothing; the disclosing step is complete_file_upload, which is gated."
+}

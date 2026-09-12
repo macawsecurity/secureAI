@@ -1,0 +1,71 @@
+{
+  "policy_id": "app:claude_ai_Google_Drive",
+  "version": "1.3",
+  "scope": "app",
+  "resources": [
+    "mcp:claude_ai_Google_Drive/**"
+  ],
+  "constraints": {
+    "attestations": {
+      "drive_write_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Approve creating, copying, updating, or moving a Drive file.",
+        "one_time": false,
+        "priority": 80,
+        "time_to_live": 300,
+        "timeout": 120
+      },
+      "drive_share_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Approve sharing a Drive file with a user or group.",
+        "one_time": true,
+        "priority": 95,
+        "time_to_live": 300,
+        "timeout": 120
+      },
+      "drive_destructive_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Approve trashing a Drive file.",
+        "one_time": true,
+        "priority": 90,
+        "time_to_live": 300,
+        "timeout": 120
+      }
+    },
+    "parameters": {
+      "mcp:claude_ai_Google_Drive/search_files": {
+        "excludeContentSnippets": {
+          "allowed_values": [
+            true
+          ],
+          "type": "boolean"
+        },
+        "snippetVerbosity": {
+          "allowed_values": [
+            "BRIEF"
+          ],
+          "type": "string"
+        },
+        "pageSize": {
+          "max": 20,
+          "type": "integer"
+        }
+      },
+      "mcp:claude_ai_Google_Drive/list_recent_files": {
+        "pageSize": {
+          "max": 20,
+          "type": "integer"
+        }
+      },
+      "mcp:claude_ai_Google_Drive/read_file_content": {
+        "includeComments": {
+          "allowed_values": [
+            false
+          ],
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "description": "Google Drive connector app policy; one control per tool: attested tools use the attestation, allow tools carry param guardrails (test specimens, unverified on the mcp: path). Per-tool policies extend this."
+}

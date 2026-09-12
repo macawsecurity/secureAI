@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_complete_file_upload",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_complete_file_upload"
+  ],
+  "attestations": [
+    "slack_send_approved"
+  ],
+  "description": "Slack complete_file_upload via connector -- irreversibly shares a file to a channel or DM, so approval gates the disclosure."
+}

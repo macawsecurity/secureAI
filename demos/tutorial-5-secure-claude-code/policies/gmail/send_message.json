@@ -1,0 +1,13 @@
+{
+  "policy_id": "mcp:claude_ai_Gmail/send_message",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Gmail",
+  "resources": [
+    "mcp:claude_ai_Gmail/send_message"
+  ],
+  "attestations": [
+    "gmail_send_approved"
+  ],
+  "description": "Gmail send_message via connector; recipients have no domain constraint and bcc is hidden, so approval gates the send."
+}

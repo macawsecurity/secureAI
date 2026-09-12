@@ -1,0 +1,10 @@
+{
+  "policy_id": "mcp:claude_ai_Slack/slack_search_emojis",
+  "version": "2.5.0",
+  "scope": "mcp",
+  "extends": "app:claude_ai_Slack",
+  "resources": [
+    "mcp:claude_ai_Slack/slack_search_emojis"
+  ],
+  "description": "Slack search_emojis via connector -- read-only emoji lookup; free-text query, no meaningful grammar constraint."
+}
