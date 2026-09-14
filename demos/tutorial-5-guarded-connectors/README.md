@@ -1,6 +1,6 @@
 # Tutorial 5: Secure Claude Code (secCC)
 
-Secure Claude Code (secCC) is an extension of the MACAW security layer to protect ungoverned Claude Code with MACAW's trust layer and MAPL policies, so every tool it runs and every MCP call is governed before it acts.
+Connect Gmail, Slack, and Google Drive to Claude Code, then drop secCC on top as the guardrail. Zero config, zero code, zero friction, just install. It brings MACAW's policy enforcement into Claude Code, putting every tool call and MCP action behind the same security pipeline before it runs.
 
 
 ## Why This Matters
@@ -26,7 +26,7 @@ secCC installs into Claude Code as hooks. Once the connector policies are loaded
 ## Directory Structure
 
 ```
-tutorial-5-secure-claude-code/
+tutorial-5-guarded-connectors/
 ├── policies/
 │   ├── gdrive/   # app:claude_ai_Google_Drive + 11 per-tool policies
 │   ├── gmail/    # app:claude_ai_Gmail + 29 per-tool policies
