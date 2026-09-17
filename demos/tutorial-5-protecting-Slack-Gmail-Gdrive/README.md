@@ -1,4 +1,4 @@
-# Tutorial 5: Guarded Connectors 
+# Tutorial 5: Protecting Slack Gmail Gdrive 
 
 Connect Gmail, Slack, and Google Drive to Claude Code, then drop secCC on top as the guardrail. Zero config, zero code, zero friction, just install. It brings MACAW's policy enforcement into Claude Code, putting every tool call and MCP action behind the same security pipeline before it runs.
 
