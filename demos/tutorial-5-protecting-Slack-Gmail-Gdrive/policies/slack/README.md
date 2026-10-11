@@ -25,11 +25,6 @@ Note: the private-search tools (`slack_search_public_and_private`, `slack_list_u
 `slack_search_private_approved` attestation, NOT by a `channel_types` restriction; forcing them public would negate
 the attestation, so no param is placed on them.
 
-Caveats: `allowed_values` fires only when the param is PRESENT (an omitted `channel_types` falls to the tool default
-and slips through); `channel_types` is a comma-separated free string, so `allowed_values [public_channel]` matches
-only the exact literal and rejects any multi-type string rather than parsing it. Slack ids (channel_id, user_id,
-canvas_id, list_id, file_id) are opaque and message/query are free text, so none are restrictable; MAPL has no
-blob-size cap, so message length is not limited.
 
 Design line: Slack ids (channel_id, user_id, canvas_id, list_id, file_id) are OPAQUE, and message/query are FREE
 TEXT. Neither is confinable with `allowed_values` (literal only), `pattern`, or a `denied_parameters` glob in a
