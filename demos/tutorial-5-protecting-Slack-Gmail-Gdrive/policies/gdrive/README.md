@@ -16,11 +16,7 @@ connector path. Run a denied call for each before trusting it. Specimens (allow 
 | list_recent_files | `pageSize` max 20 | list with `pageSize:100` |
 | read_file_content | `includeComments` = false | read with `includeComments:true` |
 
-Caveats: `allowed_values` fires only when the param is PRESENT (an omitted `excludeContentSnippets` defaults
-to false and may slip through); `allowed_values` on a boolean is untested per the guide. Drive has no array
-params, so no `max_items`; MAPL has no blob-size cap, so upload content size is not limited. Role, recipient,
-and mime confinement on the attested tools (share_file, create_file) is handled by their attestation, not by
-params.
+
 
 6 allow, 5 attest, 11 total (plus the app policy, which now also holds the param specimens).
 
