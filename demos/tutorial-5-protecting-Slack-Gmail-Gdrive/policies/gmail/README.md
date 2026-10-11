@@ -24,11 +24,7 @@ recipient DOMAIN confinement (scan `to`/`cc`/`bcc` domains, stamp `has_external_
 system-label denial (scan `labelIds`/`addLabelIds` for TRASH/SPAM/INBOX, stamp `adds_system_label`).
 Both are array-element rules, and MAPL does not match array elements.
 
-Caveats: `allowed_values`/`max_items` fire only when the param is PRESENT (an omitted `bcc`/`messageFormat`
-defaults server-side and may slip through, per the guide this is unspecified); `allowed_values` on a
-boolean is untested; Gmail ids (messageId/threadId/labelId/draftId) are opaque and `query` is free text,
-so no constraint is placed on them; MAPL has no blob-size cap, so body and attachment content are not
-limited.
+
 
 19 allow, 10 attest, 29 total (plus the app policy, which also holds the param specimens).
 
