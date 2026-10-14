@@ -17,6 +17,15 @@ Prerequisites:
           <control plane>/auth/iam/callback
       e.g. http://localhost:9312/auth/iam/callback for a local control plane
 
+    In Keycloak (admin console, http://localhost:8080/admin):
+      1. Realm: the tenant's realm (e.g. fintech)
+      2. Clients -> the tenant's client (e.g. financial-analyzer) -> Settings
+      3. Access settings -> Valid redirect URIs -> add the URI above
+      4. Capability config -> Standard flow: checked
+      5. Save
+    Other providers (Entra, Okta, Auth0, Google): add the same URI as a
+    redirect URI on the app registration the tenant is configured with.
+
 Run:
     # Terminal 1
     python 1a_trade_alice.py
