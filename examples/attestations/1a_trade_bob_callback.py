@@ -49,6 +49,9 @@ def main():
     try:
         jwt_token, principal = RemoteIdentityProvider().login_browser()
         print(f"  Signed in as {principal.get('user_id')}")
+    except KeyboardInterrupt:
+        print("\n  Sign-in cancelled.")
+        return 1
     except Exception as e:
         print(f"  ERROR: Failed to authenticate: {e}")
         print("\n  Make sure your identity provider is running and bob user exists")
