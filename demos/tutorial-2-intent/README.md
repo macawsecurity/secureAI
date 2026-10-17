@@ -1,12 +1,9 @@
 # Tutorial 2: Intent-Based Access Control
 
-This tutorial demonstrates intent-based access control and human-in-the-loop approval for the fictional
-XYZ Fincorp, whose team works on a Databricks lakehouse through a coding agent. The same SQL tool that
-reads a table can also change someone's bonus. Anyone can slip in `bonus = bonus + 20000`, and the query
-never says what the final bonus will be. MACAW looks at what each query is trying to do: it runs the
-query, blocks it, or holds it for an admin to approve. Controls are specified through
-MAPL policies enforced by the MACAW runtime invisibly. We use Databricks as the lakehouse and Claude
-Code as the coding agent. All these components are replaceable modularly.
+This tutorial demonstrates intent-based access controls, policy enforcement and action-tracking for a
+fictional XYZ Fincorp. Controls are specified through MAPL policies enforced by the MACAW runtime
+invisibly. We use Databricks as the backend lakehouse and Claude Code as the coding agent. All these
+components are replaceable modularly.
 
 ## Why This Matters
 
@@ -159,8 +156,6 @@ UPDATE t SET bonus = bonus + 20000  ->  bonus_resolution="unresolved", bonus rem
 |--------------|-----|
 | Reads the SQL structure, not the words in it | it catches the UPDATE inside a MERGE, which a top-level check misses |
 | Only a plain whole number counts as known | an expression, subquery or variable could be anything |
-| Removes the value when it cannot read it | nothing stale or forgeable is left for the policy to trust |
-| Names no columns itself | the policy picks which columns matter, so a new one is a policy edit, not a code change |
 
 ## What the Tutorial Shows
 

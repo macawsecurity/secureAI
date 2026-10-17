@@ -1,13 +1,8 @@
 # Tutorial 3: Object-Based Access Control
 
-This tutorial demonstrates MAPL object policies, continuing Tutorial 2 at XYZ Fincorp. A policy
-usually attaches to a caller: a team, a user, a service. A table is never called. A tool reads it, so
-nothing loads a policy for it. An object policy attaches the rules to the table itself, and MACAW
-enforces them whenever a tool touches that table, whoever the caller is. Here every Databricks table
-is an object: MACAW reads which tables a query names and loads each table's policy. A table with no
-policy falls back to `databricks:base`. Controls are specified through MAPL policies enforced by the
-MACAW runtime invisibly. We use Databricks as the lakehouse and Claude Code as the coding agent. All
-these components are replaceable modularly.
+An object policy attaches rules to a data object, dataset, table etc. This tutorial attaches a set of
+rules to Databricks tables. An **object policy** on a table sets which statements can run on it; a
+**content verifier** reads which tables each query touches.
 
 ## Why This Matters
 
