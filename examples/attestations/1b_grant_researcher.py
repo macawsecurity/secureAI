@@ -106,11 +106,11 @@ def main():
             intent_policy={
                 "resources": ["tool:search/web_search"],
                 # Attestation always required for this tool
-                "attestations": ["capability:web_search"],
+                "attestations": ["capability_web_search"],
                 # Attestation metadata - REUSABLE
                 "constraints": {
                     "attestations": {
-                        "capability:web_search": {
+                        "capability_web_search": {
                             "approval_criteria": "role:admin",
                             "timeout": 300,       # 5 min to approve
                             "one_time": False,    # KEY: Reusable!
