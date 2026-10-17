@@ -1,6 +1,6 @@
 {
   "policy_id": "app:claude_ai_Google_Drive",
-  "version": "1.3",
+  "version": "1.4",
   "scope": "app",
   "resources": [
     "mcp:claude_ai_Google_Drive/**"
@@ -31,41 +31,7 @@
         "time_to_live": 300,
         "timeout": 120
       }
-    },
-    "parameters": {
-      "mcp:claude_ai_Google_Drive/search_files": {
-        "excludeContentSnippets": {
-          "allowed_values": [
-            true
-          ],
-          "type": "boolean"
-        },
-        "snippetVerbosity": {
-          "allowed_values": [
-            "BRIEF"
-          ],
-          "type": "string"
-        },
-        "pageSize": {
-          "max": 20,
-          "type": "integer"
-        }
-      },
-      "mcp:claude_ai_Google_Drive/list_recent_files": {
-        "pageSize": {
-          "max": 20,
-          "type": "integer"
-        }
-      },
-      "mcp:claude_ai_Google_Drive/read_file_content": {
-        "includeComments": {
-          "allowed_values": [
-            false
-          ],
-          "type": "boolean"
-        }
-      }
     }
   },
-  "description": "Google Drive connector app policy; one control per tool: attested tools use the attestation, allow tools carry param guardrails (test specimens, unverified on the mcp: path). Per-tool policies extend this."
+  "description": "Google Drive connector app policy: approval definitions for the per-tool policies"
 }
