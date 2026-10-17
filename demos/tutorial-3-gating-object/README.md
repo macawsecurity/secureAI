@@ -1,45 +1,52 @@
 # Tutorial 3: Object-Based Access Control
 
-
-An object policy attaches rules to a data object, dataset, table etc. This tutorial attaches a set of rules to a dataproduct. An **object policy** on a data product sets which tables it exposes; a **content verifier** holds every query to read-only, no destructive SQL.
-
+This tutorial demonstrates MAPL object policies, continuing Tutorial 2 at XYZ Fincorp. A policy
+usually attaches to a caller: a team, a user, a service. A table is never called. A tool reads it, so
+nothing loads a policy for it. An object policy attaches the rules to the table itself, and MACAW
+enforces them whenever a tool touches that table, whoever the caller is. Here every Databricks table
+is an object: MACAW reads which tables a query names and loads each table's policy. A table with no
+policy falls back to `databricks:base`. Controls are specified through MAPL policies enforced by the
+MACAW runtime invisibly. We use Databricks as the lakehouse and Claude Code as the coding agent. All
+these components are replaceable modularly.
 
 ## Why This Matters
 
 | Problem | How MACAW handles it |
 |---------|----------------------|
-| One tool reaches many data products | Attach an object policy on a data product; MACAW resolves the right one at runtime from `data_product_id`. |
-| A sensitive object needs tighter limits than the rest. | Write a restrictive policy for just that object. It narrows what the data source allows and leaves the others untouched. |
-| A new or unpoliced object has no rule yet. | It falls back to `alation:base`, which requires admin approval, so it is safe by default. |
+| One SQL tool reaches every table in the workspace. | Each table gets its own policy. MACAW picks the right one per query from the tables the query names. |
+| A sensitive table needs tighter limits than the rest. | Its policy narrows the schema policy and leaves the other tables untouched. |
+| Text matching on SQL is easy to slip past: `Delete from` gets around `*DELETE *`. | MACAW reads the parsed query: which tables, which statement. |
+| A new table has no rule yet. | It falls back to `databricks:base`: SELECT only, and an admin approves each read. |
 
-## Attaching a Policy to a Thing
+## Overview
 
-Here the object is a **data product**, a curated set of tables drawn from a data source.
-The app policy carries the reference `alation:{params.data_product_id}`, and MACAW resolves it per request:
+The app policy carries the reference `databricks:{params.table}`. MACAW's verifier stamps every table the
+query names as `catalog/schema/table`, and MACAW resolves the reference per table:
 
-- **Policy exists** → it extends the data source policy `alation:databricks` and can only narrow it:
-  fewer tables, never more.
-- **No policy** → falls back to `alation:base`, which requires an admin attestation before anything runs.
+- **Policy exists** → it extends the schema policy `databricks:schema/workspace/xyz_fincorp` and can only
+  narrow it.
+- **No policy** → falls back to `databricks:base`.
 
 | Object | Policy | Effect |
 |--------|--------|--------|
-| Data source (Databricks) | `alation:databricks` | which SQL tools may run against the data source |
-| Data product | `alation:<your-data_product_id>` | extends `alation:databricks`, allows a set of tables, denies `eng_comp` |
-| no data product policy | `alation:base` (fallback) | `admin_approval_required` |
+| Schema `xyz_fincorp` | `databricks:schema/workspace/xyz_fincorp` | SELECT, INSERT and UPDATE only |
+| Table `employees` | `databricks:workspace/xyz_fincorp/employees` | SELECT and UPDATE only, plus the bonus rules from Tutorial 2 |
+| Table `hr_salaries` | `databricks:workspace/xyz_fincorp/hr_salaries` | every query blocked |
 
 ## Directory Structure
 
 ```
 tutorial-3-gating-object/
-├── script.py                       # SecureMCPProxy over the Alation MCP, registered as an MCP server
-├── Policy/
-│   ├── base.json                   # alation:base
-│   ├── app_alation.json            # app:alation
-│   ├── databricks_datasource.json  # alation:databricks (data source object)
-│   └── dataproduct.json            # alation:<your-data_product_id> (data product object)
+├── script.py                    # SecureMCPProxy over the Databricks SQL MCP, with MACAW's verifiers
+├── Policies/
+│   ├── app_databricks.json      # app:databricks-object-proxy
+│   ├── base.json                # databricks:base
+│   ├── schema_xyz_fincorp.json  # databricks:schema/workspace/xyz_fincorp
+│   ├── employees.json           # databricks:workspace/xyz_fincorp/employees
+│   └── hr_salaries.json         # databricks:workspace/xyz_fincorp/hr_salaries
 ├── utility/
-│   ├── alation_verifier.py         # AlationSQLGuardVerifier
-│   └── get_token.py                # Alation OAuth + PKCE token
+│   ├── databricks_verifier.py   # DatabricksTableVerifier + DatabricksSQLVerifier
+│   └── setup.sql                # demo tables and rows, run in Databricks
 └── README.md
 ```
 
@@ -47,156 +54,149 @@ tutorial-3-gating-object/
 
 ### 1. Prerequisites
 
-- Python 3.12+
 - MACAW console account
-- macaw client installed and configured
-- An Alation tenant
-- A Databricks workspace
+- The macaw client folder downloaded from the Console (`macaw-client-<version>-<platform>-py<version>`)
+- A Databricks workspace with a SQL warehouse
+- Claude Code
 
 ### 2. Install Dependencies
 
+Create a virtual environment with the Python version in your client folder's name (`py3.12` →
+Python 3.12), then install the client and the adapters into it:
+
 ```bash
+export MACAW_HOME="<path to macaw-client-*>"
+python3.12 -m venv .venv
+source .venv/bin/activate
 pip install "$MACAW_HOME"/macaw_client-*.whl "$MACAW_HOME/secureAI[all]"
-pip install sqlglot
+pip install sqlglot==30.20.0
 ```
 
 ### 3. Platform Setup
 
-Before the policies mean anything, the catalog objects they name have to exist. Set these up once:
+Open the SQL editor in your Databricks workspace, paste `utility/setup.sql` and run it. It creates the
+`workspace.xyz_fincorp` schema with two tables:
 
-- **Databricks tables**: create a `macaw_demo` schema in your `workspace` catalog with the tables
-  the demo gates on: `workspace.macaw_demo.eng_comp` (the sensitive table the data product policy
-  denies) plus a few tables whose names match the allowed set, `customer`, `finance`,
-  `engineering`, or `sales_`.
-- **Data source**: attach that Databricks workspace to Alation as a data source. Its policy is
-  `alation:databricks`.
-- **Data product**: create a data product on top of that data source. Its id becomes the policy id
-  `alation:<your-data_product_id>`.
-- **Custom agent tool**: in Alation, create a custom agent / tool that exposes a `sql` parameter, so
-  it is called with SQL the verifier can see. Use its name for `<your-custom-agent-tool-name>`.
+| Table | Used for |
+|-------|----------|
+| `employees` | a table with its own policy |
+| `hr_salaries` | the restricted table: every query on it is blocked |
 
-```bash
-export ALATION_BASE_URL="https://<tenant>.alationcloud.com"
-export ALATION_CLIENT_ID="<oauth client id>"
-export ALATION_CLIENT_SECRET="<oauth client secret>"
-export ALATION_MCP_URL="https://<tenant>.alationcloud.com/ai/mcp/<uuid>"
-```
+If you ran Tutorial 2, the tables are already there. Run it again any time to reset the data.
 
-### 4. Get the Alation Token
+### 4. Get the Databricks Token and MCP URL
 
-Run `utility/get_token.py`. It opens a browser where you log in and returns an access token and a
-refresh token.
+Create a personal access token in Databricks: Settings → Developer → Access tokens. The managed SQL MCP
+server is at `/api/2.0/mcp/sql` on your workspace host. Keep these two values; step 6 uses them.
 
 ```bash
-export ALATION_TOKEN="<the access token>"
-```
-
-Later, reuse the refresh token to get a new access token without the browser:
-
-```bash
-python utility/get_token.py --refresh <REFRESH_TOKEN>
+export DATABRICKS_MCP_URL="https://<workspace-host>/api/2.0/mcp/sql"
+export DATABRICKS_TOKEN="<your token>"
 ```
 
 ### 5. Load Policies
 
-Import the policies from `Policy/` into your MACAW workspace via the Console: Policies → Add Policy →
-Code Editor → paste JSON → Validate → Save.
-
-Before loading, replace the placeholders with your own values:
-
-- `<your-custom-agent-tool-name>` → your Alation tool name. Replace it in `databricks_datasource.json`
-  and `dataproduct.json`, **and** add it to `resource_patterns` in `utility/alation_verifier.py` so the
-  verifier fires on it, otherwise the statement-type check silently skips your tool.
-- `<your-data_product_id>` → the data product id you query (the policy id becomes `alation:<that id>`).
-  Replace it in `dataproduct.json`.
+Import the policies from `Policies/` into your MACAW workspace via the Console: Policies → Add Policy →
+Code Editor → paste JSON → Validate → Save. Load them in this order, because the table policies extend the
+schema policy.
 
 | # | File | Policy id |
 |---|---|---|
-| 1 | `Policy/base.json` | `alation:base` |
-| 2 | `Policy/app_alation.json` | `app:alation` |
-| 3 | `Policy/databricks_datasource.json` | `alation:databricks` |
-| 4 | `Policy/dataproduct.json` | `alation:<your-data_product_id>` |
+| 1 | `Policies/app_databricks.json` | `app:databricks-object-proxy` |
+| 2 | `Policies/base.json` | `databricks:base` |
+| 3 | `Policies/schema_xyz_fincorp.json` | `databricks:schema/workspace/xyz_fincorp` |
+| 4 | `Policies/employees.json` | `databricks:workspace/xyz_fincorp/employees` |
+| 5 | `Policies/hr_salaries.json` | `databricks:workspace/xyz_fincorp/hr_salaries` |
 
 #### Policy Hierarchy
 
-The policies demonstrate MACAW's object policy model:
-
 ```
-app:alation
-    tool:alation/<sql tool>  attests  alation:{params.data_product_id}
-                                              │
-                    ┌─────────────────────────┴─────────────────────────┐
-        data product policy exists                                no such policy
-                    │                                                   │
-    alation:<your-data_product_id>                                  alation:base
-                    └── extends alation:databricks              admin_approval_required
+app:databricks-object-proxy
+    every SQL call  attests  databricks:{params.table}
+                                         │
+             ┌───────────────────────────┴──────────────────┐
+    table policy exists                              no such policy
+             │                                              │
+databricks:workspace/xyz_fincorp/<table>             databricks:base
+  extends databricks:schema/workspace/xyz_fincorp    SELECT only + admin_approval_required
 ```
 
-A data product policy can only restrict, never expand, what `alation:databricks` allows.
+A table policy can only narrow the schema policy, never widen it. A new table in `xyz_fincorp` with no
+policy of its own goes to `databricks:base`, not to the schema policy.
 
 ### 6. Register the Proxy
 
-`script.py` fronts the Alation MCP with a `SecureMCPProxy` and adds the verifier. Register it as a
-stdio MCP server:
+`script.py` fronts the Databricks SQL MCP with a `SecureMCPProxy` and adds MACAW's verifiers. Register it
+in Claude Code as a stdio MCP server:
 
 ```bash
-claude mcp add alation-databricks --scope user \
-  -- bash -lc 'source <path to venv>/bin/activate && \
-     export MACAW_HOME="<path to macaw-client>" && \
-     export ALATION_MCP_URL="https://<tenant>.alationcloud.com/ai/mcp/<uuid>" && \
-     export ALATION_TOKEN="<fresh bearer>" && \
+claude mcp add databricks-object-proxy --scope user \
+  -- bash -lc 'source <path to .venv from step 2>/bin/activate && \
+     export MACAW_HOME="<path to macaw-client-*>" && \
+     export DATABRICKS_MCP_URL="https://<workspace-host>/api/2.0/mcp/sql" && \
+     export DATABRICKS_TOKEN="<your token>" && \
      cd <path to tutorial-3-gating-object> && \
-     python script.py stdio'
+     python script.py'
 ```
 
-Remove with:  `claude mcp remove alation-databricks`
+Remove with: `claude mcp remove databricks-object-proxy`
 
-You can also run it directly to confirm it starts and lists the upstream tools:
+Start a new Claude Code session so the server loads.
 
-```bash
-python script.py stdio
-```
+Then ask Claude Code to run each query in [Expected Output](#expected-output). When a call waits for
+approval, approve or deny it from the Console. Once approved, the query runs. The decision and the
+reason for every call are in the Console under Logs.
 
-## Custom Verifier
+## Custom Verifiers
 
-The verifier is the content half. A SQL tool exposes free-form SQL, but MAPL can only match parameter
-values, not read a query. So the verifier parses the SQL with sqlglot before the policy decision and
-stamps one parameter the policy gates on:
+Custom verifiers run inside the verification pipeline before the policy decision and stamp what they
+find as parameters, so MAPL can gate on them.
 
-`utility/alation_verifier.py`: AlationSQLGuardVerifier
+`utility/databricks_verifier.py`: DatabricksTableVerifier and DatabricksSQLVerifier
 
 ```python
-proxy.macaw_client.agent.verification_pipeline.add_verifier(AlationSQLGuardVerifier(), priority=20)
+proxy.macaw_client.agent.verification_pipeline.add_verifier(DatabricksTableVerifier(), priority=10)
+proxy.macaw_client.agent.verification_pipeline.add_verifier(DatabricksSQLVerifier(), priority=20)
 ```
 
-| Parameter | Values | Comes from |
-|-----------|--------|------------|
-| `stmt_type` | select, update, insert, delete, merge, create, drop, truncate, other, nl_only, denied | the AST root node |
+MACAW's table verifier (DatabricksTableVerifier) runs on both SQL tools. MACAW's bonus verifier
+(DatabricksSQLVerifier) is the one from Tutorial 2. It runs on `execute_sql` and reads the bonus value.
 
-The data source floor (`alation:databricks`) allows `stmt_type` = `select` only, so every write or
-DDL is blocked.
+| Parameter | Example | Set by |
+|-----------|---------|--------|
+| `table` | `"workspace/xyz_fincorp/employees"` | MACAW's table verifier: the table the query names, a list when it names several |
+| `stmt_type` | `select`, `update`, `insert`, `delete` | MACAW's table verifier, from the parsed statement |
+| `bonus_resolution`, `bonus` | `resolved`, `15000` | MACAW's bonus verifier (Tutorial 2) |
 
-| What it does | The problem it solves |
-|--------------|-----------------------|
-| Classifies by the statement's real root node, not by keywords | `INSERT … SELECT` contains the word SELECT but writes |
-| Allow-list: anything unrecognized becomes `other` | DROP / TRUNCATE / MERGE / CTAS destroy data without the word DELETE |
-| Fails closed, empty, multi-statement, or unparseable → `denied` | a query it cannot read is a query it cannot trust |
-| A SQL tool called with no SQL is `nl_only` | otherwise Alation writes the SQL server-side, where the verifier can never see it |
+```
+SELECT * FROM workspace.xyz_fincorp.employees  ->  table="workspace/xyz_fincorp/employees", stmt_type="select"
+... employees e JOIN hr_salaries h ...         ->  table=["workspace/xyz_fincorp/employees", "workspace/xyz_fincorp/hr_salaries"]
+```
 
-The verifier only fires on tools listed in its `resource_patterns`, add your tool name there (step 5).
+| What it does | Why |
+|--------------|-----|
+| Stamps every table in a JOIN, subquery or MERGE | each table's policy is checked, and all must pass |
+| Always sets `table`, replacing any value the caller sent | the caller cannot pick which policy applies |
+| Reads the statement type from the parsed SQL | `Delete from` is a delete, in any case |
+| A query that names no table gets `unknown` | it goes to `databricks:base` |
+| Denies SHOW, and two statements sent in one call | it cannot tell which tables they touch |
 
-## What the Demo Shows
+## What the Tutorial Shows
 
-1. **Object Resolution**: MACAW resolves `alation:{params.data_product_id}` to the policy for the
-   named catalog object
-2. **Inheritance**: an existing data product policy extends the data source policy `alation:databricks`
-3. **Fallback**: a data product with no policy resolves to `alation:base` and requires an admin attestation
-4. **Content control**: the verifier stamps `stmt_type`, and the data source floor allows `select` only
+1. **Object resolution**: MACAW resolves `databricks:{params.table}` to the policy of each table a query names
+2. **Inheritance**: a table policy extends its schema policy and can only narrow it
+3. **Fallback**: a table with no policy resolves to `databricks:base` and waits for an admin
+4. **Intent, carried over**: the bonus rules from Tutorial 2 now live in the `employees` policy
 
 ### Expected Output
 
-| # | Case | Request | Result | What MACAW said |
-|---|---|---|---|---|
-| 1 | Data product **with** a policy | query a data product whose `alation:<id>` policy exists | 🟢 RESOLVED | resolves to `alation:<data_product_id>`, which extends `alation:databricks` |
-| 2 | Data product **without** a policy | query a data product with no `alation:<id>` policy | 🟡 ATTESTATION | falls back to `alation:base` → `Missing or invalid attestation: admin_approval_required` |
-| 3 | Sensitive table in a covered data product | query `eng_comp` in a data product whose policy exists | 🔴 BLOCKED | the data product policy denies `eng_comp` |
+| # | Query | Result | Why |
+|---|-------|--------|-----|
+| 1 | `SELECT * FROM workspace.xyz_fincorp.employees` | 🟢 ALLOWED | `employees` allows SELECT |
+| 2 | `UPDATE workspace.xyz_fincorp.employees SET bonus = 8000 WHERE id = 1` | 🟢 ALLOWED | UPDATE allowed, bonus under 10,000 |
+| 3 | `UPDATE workspace.xyz_fincorp.employees SET bonus = 15000 WHERE id = 1` | 🟡 ATTESTATION | `comp_change_approved` waits for an admin |
+| 4 | `INSERT INTO workspace.xyz_fincorp.employees (id, name) VALUES (5, 'Lee Park')` | 🔴 BLOCKED | `employees` narrows the schema: no INSERT |
+| 5 | `Delete from workspace.xyz_fincorp.employees WHERE id = 4` | 🔴 BLOCKED | the statement is a delete, and the schema allows none |
+| 6 | `SELECT * FROM workspace.xyz_fincorp.hr_salaries` | 🔴 BLOCKED | `hr_salaries` blocks every query |
+| 7 | `SELECT e.name FROM workspace.xyz_fincorp.employees e JOIN workspace.xyz_fincorp.hr_salaries h ON e.id = h.id` | 🔴 BLOCKED | both tables are checked, and `hr_salaries` blocks it |
+| 8 | `SELECT 1` | 🟡 ATTESTATION | names no table, so it falls back to `databricks:base` → `admin_approval_required` |

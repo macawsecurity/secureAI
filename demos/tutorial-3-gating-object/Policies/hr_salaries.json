@@ -1,0 +1,21 @@
+{
+  "policy_id": "databricks:workspace/xyz_fincorp/hr_salaries",
+  "version": "1.0.0",
+  "scope": "global",
+  "resources": [
+    "tool:databricks-object-proxy/execute_sql",
+    "tool:databricks-object-proxy/execute_sql_read_only"
+  ],
+  "extends": "databricks:schema/workspace/xyz_fincorp",
+  "constraints": {
+    "denied_parameters": {
+      "tool:databricks-object-proxy/execute_sql": {
+        "query": ["*"]
+      },
+      "tool:databricks-object-proxy/execute_sql_read_only": {
+        "query": ["*"]
+      }
+    }
+  },
+  "description": "hr_salaries: every query blocked"
+}

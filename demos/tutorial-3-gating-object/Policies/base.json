@@ -1,0 +1,22 @@
+{
+  "policy_id": "databricks:base",
+  "version": "1.1.0",
+  "scope": "global",
+  "resources": [
+    "tool:databricks-object-proxy/**"
+  ],
+  "constraints": {
+    "parameters": {
+      "tool:databricks-object-proxy/execute_sql": {
+        "stmt_type": { "allowed_values": ["select"] }
+      },
+      "tool:databricks-object-proxy/execute_sql_read_only": {
+        "stmt_type": { "allowed_values": ["select"] }
+      }
+    }
+  },
+  "attestations": [
+    "admin_approval_required"
+  ],
+  "description": "Any table without its own policy: SELECT only, with admin approval"
+}

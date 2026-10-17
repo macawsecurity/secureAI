@@ -1,0 +1,22 @@
+{
+  "policy_id": "databricks:workspace/xyz_fincorp/employees",
+  "version": "1.0.1",
+  "scope": "global",
+  "resources": [
+    "tool:databricks-object-proxy/execute_sql",
+    "tool:databricks-object-proxy/execute_sql_read_only"
+  ],
+  "extends": "databricks:schema/workspace/xyz_fincorp",
+  "constraints": {
+    "parameters": {
+      "tool:databricks-object-proxy/execute_sql": {
+        "stmt_type": { "allowed_values": ["select", "update"] }
+      }
+    }
+  },
+  "attestations": [
+    "comp_change_approved::{ params.bonus_resolution == 'resolved' AND params.bonus > 10000 }",
+    "unclear_value::{ params.bonus_resolution == 'unresolved' }"
+  ],
+  "description": "employees: SELECT and UPDATE only, bonus changes gated"
+}

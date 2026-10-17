@@ -1,0 +1,20 @@
+{
+  "policy_id": "databricks:schema/workspace/xyz_fincorp",
+  "version": "1.0.0",
+  "scope": "global",
+  "resources": [
+    "tool:databricks-object-proxy/execute_sql",
+    "tool:databricks-object-proxy/execute_sql_read_only"
+  ],
+  "constraints": {
+    "parameters": {
+      "tool:databricks-object-proxy/execute_sql": {
+        "stmt_type": { "allowed_values": ["select", "insert", "update"] }
+      },
+      "tool:databricks-object-proxy/execute_sql_read_only": {
+        "stmt_type": { "allowed_values": ["select"] }
+      }
+    }
+  },
+  "description": "Schema workspace.xyz_fincorp: SELECT, INSERT, UPDATE; no DELETE or DROP"
+}

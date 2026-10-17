@@ -1,0 +1,47 @@
+{
+  "policy_id": "app:databricks-object-proxy",
+  "version": "1.0.0",
+  "scope": "global",
+  "resources": [
+    "tool:databricks-object-proxy/execute_sql_read_only",
+    "tool:databricks-object-proxy/execute_sql",
+    "tool:databricks-object-proxy/poll_sql_result"
+  ],
+  "constraints": {
+    "attestations": {
+      "admin_approval_required": {
+        "approval_criteria": "role:admin",
+        "description": "Table without its own policy -- requires an ADMIN's sign-off",
+        "one_time": true,
+        "time_to_live": 300,
+        "timeout": 300
+      },
+      "comp_change_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Comp change above $10,000 -- requires an ADMIN's just-in-time sign-off",
+        "one_time": true,
+        "time_to_live": 300,
+        "timeout": 300
+      },
+      "unclear_value": {
+        "approval_criteria": "role:admin",
+        "description": "Comp change with an unresolvable value (expression/subquery) -- ADMIN review",
+        "one_time": true,
+        "time_to_live": 300,
+        "timeout": 300
+      }
+    },
+    "parameters": {
+      "tool:databricks-object-proxy/execute_sql": {
+        "query": { "max_length": 5000, "min_length": 1, "type": "string" }
+      },
+      "tool:databricks-object-proxy/execute_sql_read_only": {
+        "query": { "max_length": 5000, "min_length": 1, "type": "string" }
+      }
+    }
+  },
+  "attestations": [
+    "databricks:{params.table}"
+  ],
+  "description": "Databricks SQL MCP for XYZ Fincorp, gated per table"
+}

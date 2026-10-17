@@ -1,0 +1,65 @@
+{
+  "policy_id": "app:databricks-remote-proxy",
+  "version": "0.3.11",
+  "scope": "global",
+  "resources": [
+    "tool:databricks-remote-proxy/execute_sql_read_only",
+    "tool:databricks-remote-proxy/execute_sql",
+    "tool:databricks-remote-proxy/poll_sql_result"
+  ],
+  "constraints": {
+    "attestations": {
+      "comp_change_approved": {
+        "approval_criteria": "role:admin",
+        "description": "Comp change above $10,000 -- requires an ADMIN's just-in-time sign-off",
+        "one_time": true,
+        "time_to_live": 300,
+        "timeout": 300
+      },
+      "unclear_value": {
+        "approval_criteria": "role:admin",
+        "description": "Comp change with an unresolvable value (expression/subquery) -- ADMIN review",
+        "one_time": true,
+        "time_to_live": 300,
+        "timeout": 300
+      }
+    },
+    "denied_parameters": {
+      "tool:databricks-remote-proxy/execute_sql": {
+        "query": [
+          "*DROP *",
+          "*drop *",
+          "*DELETE *",
+          "*delete *",
+          "*hr_salaries*"
+        ]
+      },
+      "tool:databricks-remote-proxy/execute_sql_read_only": {
+        "query": [
+          "*hr_salaries*"
+        ]
+      }
+    },
+    "parameters": {
+      "tool:databricks-remote-proxy/execute_sql": {
+        "query": {
+          "max_length": 5000,
+          "min_length": 1,
+          "type": "string"
+        }
+      },
+      "tool:databricks-remote-proxy/execute_sql_read_only": {
+        "query": {
+          "max_length": 5000,
+          "min_length": 1,
+          "type": "string"
+        }
+      }
+    }
+  },
+  "attestations": [
+    "comp_change_approved::{ params.bonus_resolution == 'resolved' AND params.bonus > 10000 }",
+    "unclear_value::{ params.bonus_resolution == 'unresolved' }"
+  ],
+  "description": "Databricks Managed MCP for XYZ fincorp ."
+}
