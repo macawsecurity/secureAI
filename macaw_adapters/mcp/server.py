@@ -119,7 +119,6 @@ class Server:
                 app_version=self.version,
                 intent_policy=intent_policy,
                 tools=tools_config,  # Unified: {name: {handler, description, ...}}
-                service_account=self.config.get('service_account')  # Pass service account if provided
             )
             
             # Register this server's agent with the Local Agent
