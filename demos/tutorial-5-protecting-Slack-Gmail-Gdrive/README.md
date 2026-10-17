@@ -1,4 +1,4 @@
-# Tutorial 5: Protecting Slack, Gmail and Google Drive 
+# Tutorial 5: Protecting Slack, Gmail and Google Drive
 
 Connect Gmail, Slack, and Google Drive to Claude Code, then drop secCC on top as the guardrail. Zero config, zero code, zero friction, just install. It brings MACAW's policy enforcement into Claude Code, putting every tool call and MCP action behind the same security pipeline before it runs.
 
@@ -7,7 +7,7 @@ Connect Gmail, Slack, and Google Drive to Claude Code, then drop secCC on top as
 
 | Problem | How secCC handles it |
 |---------|----------------------|
-| A connected MCP server (Gmail, Drive, Slack) lets the agent send mail, share files, or trash data with nothing between intent and action. | secCC intercepts every  tool call in Claude Code and evaluates it against a MAPL policy before it runs. |
+| A connected MCP server (Gmail, Drive, Slack) lets the agent send mail, share files, or trash data with nothing between intent and action. | secCC intercepts every tool call in Claude Code and evaluates it against a MAPL policy before it runs. |
 | A blanket allow or deny on a connector is too coarse; reading a file is not the same as deleting one. | Policies gate by action type: reads run free, while create, write, delete, and share require an attestation (a logged approval). |
 | Shell and network access are ungoverned; a stray `curl` can exfiltrate data. | secCC gates bash and network out of the box; an outbound call pauses for a network approval. |
 | No record of what the agent did, or why it was allowed. | Every decision and tool call is written to a signed audit trail in the Console. |
@@ -26,7 +26,7 @@ secCC installs into Claude Code as hooks. Once the connector policies are loaded
 ## Directory Structure
 
 ```
-tutorial-5-guarded-connectors/
+tutorial-5-protecting-Slack-Gmail-Gdrive/
 ├── policies/
 │   ├── gdrive/   # app:claude_ai_Google_Drive + 11 per-tool policies
 │   ├── gmail/    # app:claude_ai_Gmail + 29 per-tool policies

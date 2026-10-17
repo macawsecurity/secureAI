@@ -22,9 +22,6 @@ The demo generates two kinds of traffic; both land in the same OTel stream with 
 | `test_harness.py` (repo root) | auto-instrumentation across the SDK adapters | `prompt_received`, `policy_fetch`, `policy_decision`, `tool_execution` |
 | `1b_custom_log_event.py` | a custom business event in the same stream | `agent_registered`, `export_start`, `export_complete`, `agent_unregistered` |
 
-
-
-
 ## Directory Structure
 
 ```
@@ -49,7 +46,13 @@ so any traffic through the SDK is enough.
 
 ### 2. Install Dependencies
 
+Create a virtual environment with the Python version in your client folder's name (`py3.12` →
+Python 3.12), then install the client and the adapters into it:
+
 ```bash
+export MACAW_HOME="<path to macaw-client-*>"
+python3.12 -m venv .venv
+source .venv/bin/activate
 pip install "$MACAW_HOME"/macaw_client-*.whl "$MACAW_HOME/secureAI[all]"
 ```
 
@@ -58,8 +61,8 @@ pip install "$MACAW_HOME"/macaw_client-*.whl "$MACAW_HOME/secureAI[all]"
 Nothing is installed on the host. You need two things: your Datadog site URL and an API key.
 
 **Find your site.** Open your logged-in Datadog tab and read the hostname in the address bar, before
-the first `/`. The site is chosen at signup and cannot be changed. Append the signal path `/v1/logs` —
-for US1 that is `https://otlp.datadoghq.com/v1/logs`.
+the first `/`. The site is chosen at signup and cannot be changed. Append the signal path `/v1/logs`.
+For US1 that is `https://otlp.datadoghq.com/v1/logs`.
 
 **Create the API key.**
 
@@ -125,7 +128,6 @@ Both flow to Datadog with no logging code and no OTel setup on the host.
 
 Go to `https://<site-hostname>/logs` → time range **Last 15 minutes** → query
 `service:<your-service-name>`.
-
 
 ## What the Demo Shows
 
