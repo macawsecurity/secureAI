@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
+Custom audit events with log_event.
 
+Scenario: a nightly job exports customer records. That is a compliance event,
+not a single gated tool call, so the job logs it. The export is simulated:
+nothing is uploaded.
 
-Scenario: a  job exports customer records -- a compliance event that is
-not a single gated tool call, so we log it.
+Run (in the venv from the README):
+    export MACAW_HOME="<path to macaw-client>"
+    python 1b_custom_log_event.py
 
-Run:
-    source ~/path/to-env/nenv/bin/activate
-    export MACAW_HOME=~/path/to/macaw-client
-    python audited_export.py
-
-Datadog:  service:macaw-mcp @event:export_complete
+Datadog:  service:<your-service-name> @event:export_complete
 """
 from macaw_client import MACAWClient
 
