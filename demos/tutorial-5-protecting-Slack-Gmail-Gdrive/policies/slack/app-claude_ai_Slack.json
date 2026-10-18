@@ -1,6 +1,6 @@
 {
   "policy_id": "app:claude_ai_Slack",
-  "version": "1.3",
+  "version": "1.4",
   "scope": "app",
   "resources": [
     "mcp:claude_ai_Slack/**"
@@ -9,7 +9,7 @@
     "attestations": {
       "slack_send_approved": {
         "approval_criteria": "role:admin",
-        "description": "Approve posting a message or sharing a file to a Slack channel or DM.",
+        "description": "Approve posting a message, saving a message draft, or sharing a file to a Slack channel or DM.",
         "one_time": false,
         "priority": 100,
         "time_to_live": 300,
@@ -33,7 +33,7 @@
       },
       "slack_search_private_approved": {
         "approval_criteria": "role:admin",
-        "description": "Approve sweeping private Slack channels and DMs or enumerating the user's DMs.",
+        "description": "Approve searching private Slack channels and DMs, or listing the user's channels and DMs.",
         "one_time": false,
         "priority": 90,
         "time_to_live": 300,
