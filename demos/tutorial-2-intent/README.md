@@ -56,7 +56,8 @@ Python 3.12), then install the client and the adapters into it:
 export MACAW_HOME="<path to macaw-client-*>"
 python3.12 -m venv .venv
 source .venv/bin/activate
-pip install "$MACAW_HOME"/macaw_client-*.whl "$MACAW_HOME/secureAI[all]"
+cd "$MACAW_HOME"
+pip install macaw_client-*.whl "./secureAI[all]"
 pip install sqlglot==30.20.0
 ```
 
