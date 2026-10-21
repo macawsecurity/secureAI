@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "slack_send_approved"
-  ],
-  "description": "Slack send_message via connector -- posting to an opaque channel or DM id is ungateable by grammar, so approval gates the send."
+  ]
 }

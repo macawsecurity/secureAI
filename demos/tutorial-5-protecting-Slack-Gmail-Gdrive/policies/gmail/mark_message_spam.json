@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "gmail_destructive_approved"
-  ],
-  "description": "Gmail mark_message_spam via connector; suppresses and trains the filter, so approval gates it."
+  ]
 }

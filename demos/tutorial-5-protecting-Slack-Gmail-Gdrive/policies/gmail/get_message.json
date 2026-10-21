@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/get_message"
-  ],
-  "description": "Gmail get_message via connector, read-only; messageId is opaque."
+  ]
 }

@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Slack",
   "resources": [
     "mcp:claude_ai_Slack/slack_add_list_record"
-  ],
-  "description": "Slack add_list_record via connector -- adds a row to an already-referenced list; opaque id ungateable."
+  ]
 }

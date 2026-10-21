@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/unmark_message_spam"
-  ],
-  "description": "Gmail unmark_message_spam via connector; non-destructive reversal."
+  ]
 }

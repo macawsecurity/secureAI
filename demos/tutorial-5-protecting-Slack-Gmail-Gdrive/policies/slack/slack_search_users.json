@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Slack",
   "resources": [
     "mcp:claude_ai_Slack/slack_search_users"
-  ],
-  "description": "Slack search_users via connector -- read-only user directory search; free-text query, no meaningful grammar constraint."
+  ]
 }

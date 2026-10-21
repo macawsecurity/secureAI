@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/unlabel_message"
-  ],
-  "description": "Gmail unlabel_message via connector; organizational label remove."
+  ]
 }

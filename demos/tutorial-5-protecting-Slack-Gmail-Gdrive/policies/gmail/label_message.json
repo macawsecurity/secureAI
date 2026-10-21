@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/label_message"
-  ],
-  "description": "Gmail label_message via connector; organizational label add."
+  ]
 }

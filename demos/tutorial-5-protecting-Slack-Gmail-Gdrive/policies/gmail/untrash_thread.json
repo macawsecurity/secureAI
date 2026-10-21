@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/untrash_thread"
-  ],
-  "description": "Gmail untrash_thread via connector; restore, non-destructive reversal."
+  ]
 }

@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Slack",
   "resources": [
     "mcp:claude_ai_Slack/slack_update_list"
-  ],
-  "description": "Slack update_list via connector -- edits an already-referenced list's schema; opaque id ungateable."
+  ]
 }

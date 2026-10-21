@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "drive_write_approved"
-  ],
-  "description": "Drive update_file via connector; parentId here is a hidden move, so approval gates the edit or move."
+  ]
 }

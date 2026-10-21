@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "drive_write_approved"
-  ],
-  "description": "Drive create_file via connector; parentId cannot be confined by grammar, so approval gates the write."
+  ]
 }

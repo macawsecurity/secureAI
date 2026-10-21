@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Slack",
   "resources": [
     "mcp:claude_ai_Slack/slack_get_reactions"
-  ],
-  "description": "Slack get_reactions via connector -- read-only reaction lookup; opaque ids cannot be confined by grammar."
+  ]
 }

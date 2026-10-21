@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Slack",
   "resources": [
     "mcp:claude_ai_Slack/slack_read_user_profile"
-  ],
-  "description": "Slack read_user_profile via connector -- read-only profile lookup; opaque user_id cannot be confined by grammar."
+  ]
 }

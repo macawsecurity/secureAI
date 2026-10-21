@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "gmail_send_approved"
-  ],
-  "description": "Gmail reply via connector; replyAll fans out and recipients are unconfinable, so approval gates the send."
+  ]
 }

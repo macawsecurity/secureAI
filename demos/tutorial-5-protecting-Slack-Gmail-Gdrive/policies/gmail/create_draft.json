@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/create_draft"
-  ],
-  "description": "Gmail create_draft via connector; staging only, not delivered until a send verb runs."
+  ]
 }

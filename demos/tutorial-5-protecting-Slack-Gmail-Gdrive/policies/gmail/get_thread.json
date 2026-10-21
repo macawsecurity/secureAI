@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/get_thread"
-  ],
-  "description": "Gmail get_thread via connector, read-only; threadId is opaque."
+  ]
 }

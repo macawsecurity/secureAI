@@ -24,6 +24,5 @@
         "timeout": 120
       }
     }
-  },
-  "description": "Gmail connector app policy: approval definitions for the per-tool policies"
+  }
 }

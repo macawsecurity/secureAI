@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "slack_schedule_approved"
-  ],
-  "description": "Slack schedule_message via connector -- fires after the session ends and cannot be edited via API, so approval gates the deferred send."
+  ]
 }

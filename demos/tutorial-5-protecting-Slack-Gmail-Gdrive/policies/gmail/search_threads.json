@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/search_threads"
-  ],
-  "description": "Gmail search_threads via connector, read-only; query is free text, ungateable by grammar."
+  ]
 }

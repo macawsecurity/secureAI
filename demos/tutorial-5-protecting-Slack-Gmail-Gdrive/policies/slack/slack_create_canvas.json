@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "slack_create_approved"
-  ],
-  "description": "Slack create_canvas via connector -- creates a persistent canvas document, so approval gates the creation."
+  ]
 }

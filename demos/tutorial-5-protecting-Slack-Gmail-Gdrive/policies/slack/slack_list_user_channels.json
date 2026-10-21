@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "slack_search_private_approved"
-  ],
-  "description": "Slack list_user_channels via connector -- enumerates the user's private channels and DMs, so approval gates the disclosure."
+  ]
 }

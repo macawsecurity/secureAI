@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "slack_search_private_approved"
-  ],
-  "description": "Slack search_public_and_private via connector -- defaults to sweeping private channels and DMs; query is free text so a glob is leaky and true confinement needs a verifier, approval gates the sweep."
+  ]
 }

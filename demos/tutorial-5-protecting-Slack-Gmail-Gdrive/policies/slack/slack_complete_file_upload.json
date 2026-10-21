@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "slack_send_approved"
-  ],
-  "description": "Slack complete_file_upload via connector -- irreversibly shares a file to a channel or DM, so approval gates the disclosure."
+  ]
 }

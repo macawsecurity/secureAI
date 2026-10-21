@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "gmail_destructive_approved"
-  ],
-  "description": "Gmail apply_sensitive_thread_label via connector; TRASH/SPAM across a thread, so approval gates it."
+  ]
 }

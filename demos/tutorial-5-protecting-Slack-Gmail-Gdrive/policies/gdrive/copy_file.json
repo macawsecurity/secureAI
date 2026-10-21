@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "drive_write_approved"
-  ],
-  "description": "Drive copy_file via connector; duplicating into a chosen parentId is ungateable, so approval gates the write."
+  ]
 }

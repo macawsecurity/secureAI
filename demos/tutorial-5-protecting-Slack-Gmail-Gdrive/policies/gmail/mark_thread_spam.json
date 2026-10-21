@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "gmail_destructive_approved"
-  ],
-  "description": "Gmail mark_thread_spam via connector; suppresses a thread, so approval gates it."
+  ]
 }

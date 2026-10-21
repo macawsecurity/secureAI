@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Slack",
   "resources": [
     "mcp:claude_ai_Slack/slack_search_public"
-  ],
-  "description": "Slack search_public via connector -- searches public channels only and needs no consent; query is free text so no meaningful grammar constraint."
+  ]
 }

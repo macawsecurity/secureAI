@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/delete_draft"
-  ],
-  "description": "Gmail delete_draft via connector; staging only, removes an unsent draft."
+  ]
 }

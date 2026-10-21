@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "drive_share_approved"
-  ],
-  "description": "Drive share_file via connector; emailAddress has no domain constraint, so approval gates the external grant."
+  ]
 }

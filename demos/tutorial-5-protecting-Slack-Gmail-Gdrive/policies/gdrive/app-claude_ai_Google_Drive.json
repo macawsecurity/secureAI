@@ -32,6 +32,5 @@
         "timeout": 120
       }
     }
-  },
-  "description": "Google Drive connector app policy: approval definitions for the per-tool policies"
+  }
 }

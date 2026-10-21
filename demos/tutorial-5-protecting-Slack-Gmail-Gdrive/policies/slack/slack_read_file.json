@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Slack",
   "resources": [
     "mcp:claude_ai_Slack/slack_read_file"
-  ],
-  "description": "Slack read_file via connector -- read-only; opaque file_id cannot be confined by grammar."
+  ]
 }

@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Gmail",
   "resources": [
     "mcp:claude_ai_Gmail/list_labels"
-  ],
-  "description": "Gmail list_labels via connector, read-only lookup."
+  ]
 }

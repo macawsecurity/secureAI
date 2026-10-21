@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "gmail_send_approved"
-  ],
-  "description": "Gmail forward via connector; forwards existing mail to external recipients, so approval gates the send."
+  ]
 }

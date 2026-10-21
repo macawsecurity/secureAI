@@ -8,6 +8,5 @@
   ],
   "attestations": [
     "gmail_send_approved"
-  ],
-  "description": "Gmail send_message via connector; recipients have no domain constraint and bcc is hidden, so approval gates the send."
+  ]
 }

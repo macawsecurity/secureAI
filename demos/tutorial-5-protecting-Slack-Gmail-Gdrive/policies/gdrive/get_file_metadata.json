@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Google_Drive",
   "resources": [
     "mcp:claude_ai_Google_Drive/get_file_metadata"
-  ],
-  "description": "Drive get_file_metadata via connector, read-only lookup; fileId is opaque."
+  ]
 }

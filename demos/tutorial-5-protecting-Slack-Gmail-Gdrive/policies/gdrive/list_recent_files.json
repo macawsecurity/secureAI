@@ -5,6 +5,5 @@
   "extends": "app:claude_ai_Google_Drive",
   "resources": [
     "mcp:claude_ai_Google_Drive/list_recent_files"
-  ],
-  "description": "Drive list_recent_files via connector, read-only discovery; no folder param to confine."
+  ]
 }
