@@ -25,17 +25,23 @@ Learn more about our research: [Authenticated Workflows](https://arxiv.org/abs/2
 
 **From PyPI:**
 ```bash
-pip install macaw-adapters[all]
-
-# Or install specific adapters only
-pip install macaw-adapters[openai]
-pip install macaw-adapters[claude]         # Anthropic SDK
-pip install macaw-adapters[langchain]
-pip install macaw-adapters[pydantic-ai]
-pip install macaw-adapters[litellm]        # 100+ providers
-pip install macaw-adapters[mcp]
-pip install macaw-adapters[mcp-proxy]      # For external MCP servers
+pip install "macaw-adapters[all]"
 ```
+
+Or only the adapters you use. `claude` installs the Anthropic SDK, `litellm`
+covers 100+ providers, and `mcp-proxy` is for external MCP servers:
+```bash
+pip install "macaw-adapters[openai]"
+pip install "macaw-adapters[claude]"
+pip install "macaw-adapters[langchain]"
+pip install "macaw-adapters[pydantic-ai]"
+pip install "macaw-adapters[litellm]"
+pip install "macaw-adapters[mcp]"
+pip install "macaw-adapters[mcp-proxy]"
+```
+
+`mcp`, `mcp-proxy` and `litellm` need Python 3.10 or later, and `pydantic-ai`
+needs 3.11 or later.
 
 **From source:**
 ```bash
@@ -121,7 +127,7 @@ user_proxy = proxy.bind_to_user(user_client)
 result = user_proxy.call_tool("query_accounts", {"limit": 10})
 ```
 
-Install with: `pip install macaw-adapters[mcp-proxy]`
+Install with: `pip install "macaw-adapters[mcp-proxy]"`
 
 ### LangChain
 
@@ -163,7 +169,7 @@ Every way Pydantic AI accepts tools is governed - `tools=`, `@agent.tool`,
 such as `FallbackModel` may use, and refuse provider-side tools like web search
 before the provider is called.
 
-Install with: `pip install macaw-adapters[pydantic-ai]`
+Install with: `pip install "macaw-adapters[pydantic-ai]"`
 
 ### SecureLiteLLM
 
@@ -180,7 +186,7 @@ response = litellm.completion(
 )
 ```
 
-Install with: `pip install macaw-adapters[litellm]`
+Install with: `pip install "macaw-adapters[litellm]"`
 
 ## Multi-User Support
 

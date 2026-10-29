@@ -43,7 +43,7 @@ MACAW deploys cryptographically-secured policy enforcement points at the edge us
 
 ```python
 # Install
-# pip install macaw-adapters[openai]
+# pip install "macaw-adapters[openai]"
 
 from macaw_adapters.openai import SecureOpenAI
 
@@ -155,8 +155,11 @@ Login-strength gating. A tool runs only if the human logged in with a phishing-r
 
 1. **Install the adapters**:
    ```bash
-   pip install macaw-adapters[all]
-   # Or specific: pip install macaw-adapters[openai,anthropic,langchain,mcp]
+   pip install "macaw-adapters[all]"
+   ```
+   Or only what these examples use:
+   ```bash
+   pip install "macaw-adapters[openai,claude,langchain,mcp]"
    ```
 
 2. **Set API keys** (for LLM examples):
