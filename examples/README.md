@@ -149,6 +149,18 @@ Login-strength gating. A tool runs only if the human logged in with a phishing-r
 
 **Progression**: Start with 1a for the pure concept (run it twice — passkey vs password). Use 1b to see it composed as a precondition to a human approval (builds on `attestations/`).
 
+### Custom Verifiers (`custom-verifiers/`)
+
+A policy names the checks that run on a tool's calls: a verifier that refuses a request carrying a credential, a processor that masks credentials in the result, and an extractor that counts credentials for the policy to judge. Needs a one-time workspace setup; see the folder's README.
+
+| Example | Description |
+|---------|-------------|
+| `1a_scanner_and_scrubber.py` | A clean call comes back with its token `[REDACTED]`; a call carrying an AWS key is refused before the tool runs |
+| `1b_extractor_threshold_alice.py` | Requester: 0 credentials allowed, 2 refused, 1 blocks for a manager's review |
+| `1b_extractor_threshold_bob.py` | Approver: manager approves/denies the pending review |
+
+**Progression**: Start with 1a for verifiers and processors. Use 1b for an extractor, where the policy rather than the function decides the outcome (builds on `attestations/`).
+
 ## Running the Examples
 
 ### Prerequisites
