@@ -1,0 +1,12 @@
+[
+  {
+    "params": {"reservation_id": "E123"},
+    "config": {"tools": ["tool:reservation-demo/modify"]},
+    "expect": "pass"
+  },
+  {
+    "params": {"reservation_id": "E123"},
+    "config": {"tools": ["tool:sample"]},
+    "expect": "fail"
+  }
+]

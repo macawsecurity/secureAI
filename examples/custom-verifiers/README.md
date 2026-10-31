@@ -1,13 +1,15 @@
 # Custom Verifiers Examples
 
 A policy names the checks that run on a tool's calls; the enforcement point
-runs them. These examples use three functions from MACAW's library:
+runs them. Examples 1a and 1b use three functions from MACAW's library;
+example 2a uses a verifier written for it, in `functions/`:
 
 | Function | Kind | What it does |
 |---|---|---|
 | `secret_scanner` | verifier | Refuses a request whose named fields carry a credential |
 | `secret_scrubber` | processor | Masks credentials in a tool's result before the tool signs it |
 | `secrets` | extractor | Counts the credentials in a field; the policy decides what each count means |
+| `modifiable_reservation` | verifier | Refuses a modify unless the same caller looked up that reservation and it is not basic economy |
 
 A verifier decides and a processor transforms. An extractor does neither: it
 reports a fact, and the policy sets the threshold.
@@ -23,6 +25,16 @@ reports a fact, and the policy sets the threshold.
 
 The policy covers `tool:secret-demo/**`. Whoever calls the tool, these checks
 apply to it.
+
+For example 2a:
+
+3. **Add the verifier.** Open Policies > Functions > New Function. Choose kind
+   Verifier and name it `modifiable_reservation`. Paste
+   `functions/modifiable_reservation.py` as the source and
+   `functions/modifiable_reservation.samples.json` as the samples. Run, then
+   Save.
+4. **Add the policy.** Open Policies > Add Policy, paste
+   `policies/app_reservation-demo.json` and Save.
 
 ## Examples
 
@@ -67,6 +79,45 @@ python 1b_extractor_threshold_alice.py
 python 1b_extractor_threshold_bob.py
 ```
 
+### Example 2a: A Check That Remembers What a Tool Did
+
+| File | What It Does |
+|------|--------------|
+| `2a_lookup_before_modify.py` | A service with `lookup` and `modify` tools; a caller looks up two reservations and modifies them; a second caller tries to use the first caller's lookup |
+
+`lookup` records the reservation it returned, from the service's own data:
+
+```python
+logger.attest(f"reservation_checked/{rid}", value={"reservation_id": rid, "cabin": cabin})
+```
+
+The tool's enforcement point signs the attestation and keeps it in the
+caller's session: one session per calling principal. `modifiable_reservation`
+reads it on a later `modify` and compares it with the call:
+
+| Step | Outcome | Why |
+|---|---|---|
+| modify E123, nothing looked up | refused | no `reservation_checked/E123` in this caller's session |
+| look up E123 and B456 | allowed | each lookup records its own reservation |
+| modify E123 | allowed | looked up, economy |
+| modify B456 | refused | looked up, basic economy |
+| a second caller modifies E123 | refused | its session holds nothing |
+
+The reservation id is part of the name, so each reservation keeps its own
+record. Under one name, the second lookup would replace the first.
+
+The verifier reads the attestation and spends nothing. To make it single use,
+attest with `one_time=True` and require it by name in the policy's
+`attestations`; see the MAPL guide, Explicit Attestation.
+
+Attestations are held in the service's memory: a restart clears them, and
+another service cannot see them. Needs client 0.9.21 or later; earlier clients
+keep one set for every caller, and step 7 says so.
+
+```bash
+python 2a_lookup_before_modify.py
+```
+
 ## Change the policy, not the code
 
 | Policy setting | Effect |
@@ -75,3 +126,4 @@ python 1b_extractor_threshold_bob.py
 | `"enforce": false` on the scanner | report what it would refuse without refusing, then promote |
 | `count > 1` | how many credentials are too many |
 | `"verifiers": ["secret_scanner::{...}"]` | when a check applies |
+| `"tools": [...]` on `modifiable_reservation` | which tools it guards |

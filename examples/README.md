@@ -151,15 +151,16 @@ Login-strength gating. A tool runs only if the human logged in with a phishing-r
 
 ### Custom Verifiers (`custom-verifiers/`)
 
-A policy names the checks that run on a tool's calls: a verifier that refuses a request carrying a credential, a processor that masks credentials in the result, and an extractor that counts credentials for the policy to judge. Needs a one-time workspace setup; see the folder's README.
+A policy names the checks that run on a tool's calls: a verifier that refuses a request carrying a credential, a processor that masks credentials in the result, an extractor that counts credentials for the policy to judge, and a verifier you write that reads what an earlier tool call recorded. Needs a one-time workspace setup; see the folder's README.
 
 | Example | Description |
 |---------|-------------|
 | `1a_scanner_and_scrubber.py` | A clean call comes back with its token `[REDACTED]`; a call carrying an AWS key is refused before the tool runs |
 | `1b_extractor_threshold_alice.py` | Requester: 0 credentials allowed, 2 refused, 1 blocks for a manager's review |
 | `1b_extractor_threshold_bob.py` | Approver: manager approves/denies the pending review |
+| `2a_lookup_before_modify.py` | A modify is allowed only for a reservation the same caller looked up, and not for basic economy; a second caller cannot use the first caller's lookup |
 
-**Progression**: Start with 1a for verifiers and processors. Use 1b for an extractor, where the policy rather than the function decides the outcome (builds on `attestations/`).
+**Progression**: Start with 1a for verifiers and processors. Use 1b for an extractor, where the policy rather than the function decides the outcome (builds on `attestations/`). Use 2a to write your own verifier over a value a tool recorded.
 
 ## Running the Examples
 

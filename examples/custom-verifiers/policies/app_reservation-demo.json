@@ -1,0 +1,13 @@
+{
+  "policy_id": "app:reservation-demo",
+  "description": "Example 2a of custom-verifiers. The verifier modifiable_reservation refuses a modify unless the same caller looked up that reservation and it is not basic economy.",
+  "scope": "global",
+  "version": "1.0",
+  "resources": ["tool:reservation-demo/**"],
+  "verifiers": ["modifiable_reservation"],
+  "constraints": {
+    "verifiers": {
+      "modifiable_reservation": {"tools": ["tool:reservation-demo/modify"]}
+    }
+  }
+}
