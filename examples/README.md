@@ -201,6 +201,12 @@ python mcp/1a_simple_invocation.py
 python langchain/langchain_1c_orchestration.py
 ```
 
+These are short scripts: their clients stop when the script exits. In code
+that keeps running, use `with MACAWClient(...) as client:` or call
+`client.unregister()` in a `finally` block: a client dropped without
+unregistering keeps polling the control plane until the process exits. Create
+one client per service or session and reuse it, rather than one per task.
+
 ## Tutorial
 
 For a complete end-to-end tutorial with policy setup, identity provider configuration, and a realistic multi-user scenario, see:
