@@ -39,7 +39,7 @@ Features:
 For more information: https://macawsecurity.ai
 """
 
-__version__ = "0.9.10.1"
+__version__ = "0.9.21"
 
 # Primary FastMCP-compatible API (your MCP servers)
 from .mcp import SecureMCP, Context
